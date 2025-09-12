@@ -1,23 +1,12 @@
-import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Box, Plane, Text, Environment, Sky } from '@react-three/drei';
 import { 
-  Group,
-  DoubleSide,
-  BufferGeometry,
-  LineBasicMaterial,
-  EdgesGeometry,
-  LineSegments,
-  PlaneGeometry,
-  createOptimizedGeometry
+  Group
 } from '../../utils/threeShared';
 import { 
   motion, 
-  AnimatePresence,
-  MOTION_VARIANTS,
-  MOTION_TRANSITIONS,
-  MOTION_GESTURES,
-  createDelayedAnimation
+  AnimatePresence
 } from '../../utils/motionShared';
 import { usePerformanceOptimization } from '../../utils/performanceOptimizer';
 

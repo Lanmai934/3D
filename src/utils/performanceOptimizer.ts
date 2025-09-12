@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { 
   WebGLRenderer, 
   Scene, 
-  Material, 
   BufferGeometry,
   MeshStandardMaterial,
   PCFSoftShadowMap,
@@ -180,14 +179,11 @@ export class PerformanceOptimizer {
     renderer.toneMapping = ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1;
     
-    // 启用物理正确的光照
-    renderer.physicallyCorrectLights = true;
-    
     console.log('Renderer optimization applied');
   }
 
   // 优化材质
-  optimizeMaterial(material: Material) {
+  optimizeMaterial(material: THREE.Material) {
     // 禁用不必要的特性
     if (material instanceof MeshStandardMaterial) {
       material.transparent = false;

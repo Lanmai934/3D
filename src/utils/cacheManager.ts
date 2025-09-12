@@ -35,7 +35,9 @@ export class CacheManager {
     // 如果缓存已满，删除最旧的项
     if (this.memoryCache.size >= this.maxMemoryCacheSize) {
       const oldestKey = this.memoryCache.keys().next().value;
-      this.memoryCache.delete(oldestKey);
+      if (oldestKey) {
+        this.memoryCache.delete(oldestKey);
+      }
     }
 
     this.memoryCache.set(key, {
