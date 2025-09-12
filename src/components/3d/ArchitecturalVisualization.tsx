@@ -1,7 +1,7 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Box, Plane, Text, Environment, Sky, Float, Html, useTexture } from '@react-three/drei';
-import { Mesh, Vector3, Color, Group } from 'three';
+import React, { useRef, useState, useCallback } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Box, Plane, Text, Environment, Sky } from '@react-three/drei';
+import { Group } from 'three';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,9 +36,9 @@ const BuildingStructure: React.FC<{ viewMode: ViewMode; onRoomClick: (room: Room
   const buildingRef = useRef<Group>(null);
   const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
 
-  useFrame((state) => {
+  useFrame(() => {
     if (buildingRef.current && viewMode === 'exterior') {
-      buildingRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.1) * 0.05;
+      buildingRef.current.rotation.y += 0.002;
     }
   });
 

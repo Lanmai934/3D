@@ -1,23 +1,14 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Sphere, Box, Text, Environment, Stars, Float, Html } from '@react-three/drei';
-import { Mesh, Vector3, Color } from 'three';
+import React, { useRef, useState, useCallback } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Text, Environment, Stars, Float } from '@react-three/drei';
+import { Mesh } from 'three';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // VR场景类型
 type VRScene = 'space' | 'underwater' | 'forest' | 'city' | 'museum';
 
-// VR体验数据接口
-interface VRExperienceData {
-  id: string;
-  name: string;
-  description: string;
-  scene: VRScene;
-  duration: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  features: string[];
-}
+
 
 // 交互热点接口
 interface Hotspot {
@@ -44,7 +35,7 @@ const FloatingParticles: React.FC<{ scene: VRScene }> = ({ scene }) => {
     }
   };
 
-  useFrame((state) => {
+  useFrame(() => {
     if (particlesRef.current) {
       particlesRef.current.rotation.y += 0.001;
       particlesRef.current.rotation.x += 0.0005;

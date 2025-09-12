@@ -1,8 +1,8 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Text, Box, Plane, Environment } from '@react-three/drei';
-import { Mesh, Vector3 } from 'three';
-import * as THREE from 'three';
+import { Mesh } from 'three';
+
 
 // 展品接口定义
 interface ExhibitItem {

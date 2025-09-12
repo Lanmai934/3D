@@ -1,7 +1,6 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Text, Box, Sphere, Cylinder, Environment, ContactShadows } from '@react-three/drei';
-import { Mesh, Vector3 } from 'three';
 import * as THREE from 'three';
 
 // 产品接口定义
@@ -23,7 +22,7 @@ interface ProductModelProps {
 }
 
 const ProductModel: React.FC<ProductModelProps> = ({ product, isSelected, onSelect }) => {
-  const meshRef = useRef<Mesh>(null);
+  const meshRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
 
   useFrame((state) => {
