@@ -46,13 +46,13 @@ const Contact = () => {
     {
       icon: '📧',
       title: '邮箱',
-      value: 'hello@3dportfolio.com',
-      link: 'mailto:hello@3dportfolio.com'
+  value: 'o@portfom',
+      link: '13298382579@163.com'
     },
     {
       icon: '📱',
       title: '电话',
-      value: '+86 138 0000 0000',
+      value: '+86  ',
       link: 'tel:+8613800000000'
     },
     {

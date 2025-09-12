@@ -2,6 +2,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Scene3D from '../components/3d/Scene3D';
 import FloatingCube from '../components/3d/FloatingCube';
+import InteractiveGallery3D from '../components/3d/InteractiveGallery3D';
+import ProductVisualization from '../components/3d/ProductVisualization';
+import ProductionDashboard from '../components/3d/ProductionDashboard';
+import VRExperience from '../components/3d/VRExperience';
+import ArchitecturalVisualization from '../components/3d/ArchitecturalVisualization';
 
 interface Project {
   id: number;
@@ -16,6 +21,11 @@ interface Project {
 const Portfolio = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [showGallery, setShowGallery] = useState(false);
+  const [showProductVisualization, setShowProductVisualization] = useState(false);
+  const [showProductionDashboard, setShowProductionDashboard] = useState(false);
+  const [showVRExperience, setShowVRExperience] = useState(false);
+  const [showArchitecturalVisualization, setShowArchitecturalVisualization] = useState(false);
 
   const projects: Project[] = [
     {
@@ -151,7 +161,21 @@ const Portfolio = () => {
                 initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                onClick={() => setSelectedProject(project)}
+onClick={() => {
+                  if (project.title === '交互式3D展厅') {
+                    setShowGallery(true);
+                  } else if (project.title === '产品可视化工具') {
+                    setShowProductVisualization(true);
+                  } else if (project.title === '数据可视化大屏') {
+                    setShowProductionDashboard(true);
+                  } else if (project.title === '虚拟现实体验') {
+                    setShowVRExperience(true);
+                  } else if (project.title === '建筑可视化') {
+                    setShowArchitecturalVisualization(true);
+                  } else {
+                    setSelectedProject(project);
+                  }
+                }}
                 whileHover={{ y: -10 }}
               >
                 {/* Project Preview */}
@@ -199,6 +223,66 @@ const Portfolio = () => {
           </div>
         </div>
       </section>
+
+      {/* 3D Gallery Modal */}
+      {showGallery && (
+        <motion.div
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <div className="w-full h-full relative">
+            <button
+              onClick={() => setShowGallery(false)}
+              className="absolute top-4 right-4 z-10 text-white text-2xl hover:text-gray-300 transition-colors bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center"
+            >
+              ×
+            </button>
+            <InteractiveGallery3D />
+          </div>
+        </motion.div>
+      )}
+
+      {/* Product Visualization Modal */}
+      {showProductVisualization && (
+        <motion.div
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <div className="w-full h-full relative">
+            <button
+              onClick={() => setShowProductVisualization(false)}
+              className="absolute top-4 right-4 z-10 text-white text-2xl hover:text-gray-300 transition-colors bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center"
+            >
+              ×
+            </button>
+            <ProductVisualization />
+          </div>
+        </motion.div>
+      )}
+
+      {/* Production Dashboard Modal */}
+      {showProductionDashboard && (
+        <motion.div
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <div className="w-full h-full relative">
+            <button
+              onClick={() => setShowProductionDashboard(false)}
+              className="absolute top-4 right-4 z-10 text-white text-2xl hover:text-gray-300 transition-colors bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center"
+            >
+              ×
+            </button>
+            <ProductionDashboard />
+          </div>
+        </motion.div>
+      )}
 
       {/* Project Detail Modal */}
       {selectedProject && (
@@ -253,6 +337,46 @@ const Portfolio = () => {
           </motion.div>
         </motion.div>
       )}
+
+      {/* VR Experience Modal */}
+      {showVRExperience && (
+        <motion.div
+          className="fixed inset-0 bg-black z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <button
+            onClick={() => setShowVRExperience(false)}
+            className="absolute top-4 right-4 z-10 text-white hover:text-gray-300 transition-colors"
+          >
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <VRExperience />
+         </motion.div>
+       )}
+
+       {/* Architectural Visualization Modal */}
+       {showArchitecturalVisualization && (
+         <motion.div
+           className="fixed inset-0 bg-black z-50"
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           exit={{ opacity: 0 }}
+         >
+           <button
+             onClick={() => setShowArchitecturalVisualization(false)}
+             className="absolute top-4 right-4 z-10 text-white hover:text-gray-300 transition-colors"
+           >
+             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+             </svg>
+           </button>
+           <ArchitecturalVisualization />
+         </motion.div>
+       )}
     </div>
   );
 };
