@@ -7,7 +7,7 @@ export const useScrollAnimation = () => {
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
-    let scrollTimeout: NodeJS.Timeout;
+    let scrollTimeout: number;
 
     const updateScrollY = () => {
       const currentScrollY = window.scrollY;
@@ -20,7 +20,7 @@ export const useScrollAnimation = () => {
       clearTimeout(scrollTimeout);
       
       // 设置新的定时器，在停止滚动后重置状态
-      scrollTimeout = setTimeout(() => {
+      scrollTimeout = window.setTimeout(() => {
         setIsScrolling(false);
       }, 150);
       

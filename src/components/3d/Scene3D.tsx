@@ -1,8 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows, Stats } from '@react-three/drei';
 import { Suspense } from 'react';
-import { ACESFilmicToneMapping, sRGBEncoding } from 'three';
-import LoadingSpinner from '../ui/LoadingSpinner';
+import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 
 interface Scene3DProps {
   children: React.ReactNode;
@@ -30,7 +29,7 @@ const Scene3D = ({
           alpha: true,
           powerPreference: 'high-performance',
           toneMapping: ACESFilmicToneMapping,
-          outputEncoding: sRGBEncoding
+          outputColorSpace: SRGBColorSpace
         }}
         performance={{ min: 0.5 }}
         frameloop="demand"

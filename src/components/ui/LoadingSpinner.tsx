@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   text?: string;
 }
 
@@ -9,7 +9,8 @@ const LoadingSpinner = ({ size = 'md', text = '加载中...' }: LoadingSpinnerPr
   const sizeClasses = {
     sm: 'w-6 h-6',
     md: 'w-12 h-12',
-    lg: 'w-16 h-16'
+    lg: 'w-16 h-16',
+    xl: 'w-20 h-20'
   };
 
   return (

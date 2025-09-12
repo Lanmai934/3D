@@ -77,7 +77,7 @@ export const useCameraFollow = (intensity: number = 0.1) => {
 // 视差效果
 export const useParallax = (factor: number = 1) => {
   const ref = useRef<Mesh>(null!);
-  const { viewport, camera } = useThree();
+  const { viewport } = useThree();
   const mousePosition = useMousePosition();
 
   useFrame(() => {
@@ -92,12 +92,12 @@ export const useParallax = (factor: number = 1) => {
 
 // 3D射线检测
 export const useRaycast = () => {
-  const { camera, scene } = useThree();
+  const { scene } = useThree();
   const raycaster = new Raycaster();
   const [intersectedObjects, setIntersectedObjects] = useState<Mesh[]>([]);
 
-  const raycast = (mousePosition: { x: number; y: number }) => {
-    raycaster.setFromCamera(mousePosition, camera);
+  const raycast = () => {
+    // raycaster.setFromCamera(mousePosition, camera);
     const intersects = raycaster.intersectObjects(scene.children, true);
     
     const meshes = intersects

@@ -39,7 +39,7 @@ const LazyWrapper = ({
 };
 
 // 高阶组件：为组件添加懒加载功能
-export const withLazyLoading = <P extends object>(
+export const withLazyLoading = <P extends Record<string, any>>(
   Component: ComponentType<P>,
   loadingText?: string
 ) => {
@@ -53,7 +53,7 @@ export const withLazyLoading = <P extends object>(
         </div>
       }
     >
-      <LazyComponent {...props} />
+      <LazyComponent {...(props as any)} />
     </LazyWrapper>
   );
 };
