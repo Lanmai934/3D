@@ -1,12 +1,20 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import Scene3D from '../components/3d/Scene3D';
-import FloatingCube from '../components/3d/FloatingCube';
-import InteractiveGallery3D from '../components/3d/InteractiveGallery3D';
-import ProductVisualization from '../components/3d/ProductVisualization';
-import ProductionDashboard from '../components/3d/ProductionDashboard';
-import VRExperience from '../components/3d/VRExperience';
-import ArchitecturalVisualization from '../components/3d/ArchitecturalVisualization';
+import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
+import { 
+  motion,
+  MOTION_VARIANTS,
+  MOTION_TRANSITIONS,
+  MOTION_GESTURES,
+  createDelayedAnimation
+} from '../utils/motionShared';
+
+// 懒加载3D组件以提高性能
+const Scene3D = lazy(() => import('../components/3d/Scene3D'));
+const FloatingCube = lazy(() => import('../components/3d/FloatingCube'));
+const InteractiveGallery3D = lazy(() => import('../components/3d/InteractiveGallery3D'));
+const ProductVisualization = lazy(() => import('../components/3d/ProductVisualization'));
+const ProductionDashboard = lazy(() => import('../components/3d/ProductionDashboard'));
+const VRExperience = lazy(() => import('../components/3d/VRExperience'));
+const ArchitecturalVisualization = lazy(() => import('../components/3d/ArchitecturalVisualization'));
 
 interface Project {
   id: number;
@@ -27,7 +35,8 @@ const Portfolio = () => {
   const [showVRExperience, setShowVRExperience] = useState(false);
   const [showArchitecturalVisualization, setShowArchitecturalVisualization] = useState(false);
 
-  const projects: Project[] = [
+  // 缓存项目数据以避免重复创建
+  const projects: Project[] = useMemo(() => [
     {
       id: 1,
       title: '交互式3D展厅',
@@ -73,20 +82,47 @@ const Portfolio = () => {
       position: [1, 1, 1],
       technologies: ['Three.js', 'Blender', 'PBR', 'HDR']
     }
-  ];
+  ], []);
 
-  const categories = [
+  // 缓存分类数据
+  const categories = useMemo(() => [
     { id: 'all', name: '全部' },
     { id: 'web3d', name: 'Web 3D' },
     { id: 'visualization', name: '可视化' },
     { id: 'dataviz', name: '数据可视化' },
     { id: 'vr', name: 'VR/AR' },
     { id: 'architecture', name: '建筑可视化' }
-  ];
+  ], []);
 
-  const filteredProjects = selectedCategory === 'all' 
-    ? projects 
-    : projects.filter(project => project.category === selectedCategory);
+  // 缓存过滤后的项目列表
+  const filteredProjects = useMemo(() => 
+    selectedCategory === 'all' 
+      ? projects 
+      : projects.filter(project => project.category === selectedCategory),
+    [projects, selectedCategory]
+  );
+  
+  // 优化点击处理函数
+  const handleProjectClick = useCallback((project: Project) => {
+    if (project.title === '交互式3D展厅') {
+      setShowGallery(true);
+    } else if (project.title === '产品可视化工具') {
+      setShowProductVisualization(true);
+    } else if (project.title === '数据可视化大屏') {
+      setShowProductionDashboard(true);
+    } else if (project.title === '虚拟现实体验') {
+      setShowVRExperience(true);
+    } else if (project.title === '建筑可视化') {
+      setShowArchitecturalVisualization(true);
+    } else {
+      setSelectedProject(project);
+    }
+  }, []);
+  
+  // 优化分类切换函数
+  const handleCategoryChange = useCallback((categoryId: string) => {
+    setSelectedCategory(categoryId);
+  }, []);
 
   return (
     <div className="pt-16 min-h-screen">
@@ -95,17 +131,18 @@ const Portfolio = () => {
         <div className="max-w-6xl mx-auto text-center">
           <motion.h1
             className="text-5xl md:text-6xl font-bold mb-6"
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            variants={MOTION_VARIANTS.slideUp}
+            initial="hidden"
+            animate="visible"
+            transition={MOTION_TRANSITIONS.standard}
           >
             <span className="gradient-text">作品集</span>
           </motion.h1>
           <motion.p
             className="text-xl text-gray-300 max-w-3xl mx-auto"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            variants={createDelayedAnimation(0.2)}
+            initial="hidden"
+            animate="visible"
           >
             探索我的3D创作之旅，每个项目都是技术与艺术的完美结合
           </motion.p>
@@ -113,7 +150,7 @@ const Portfolio = () => {
       </section>
 
       {/* 3D Scene */}
-      <section className="h-96 mb-12">
+      {/* <section className="h-96 mb-12">
         <Scene3D enableControls={true} showEnvironment={false}>
           {filteredProjects.map((project) => (
             <group key={project.id}>
@@ -125,7 +162,7 @@ const Portfolio = () => {
             </group>
           ))}
         </Scene3D>
-      </section>
+      </section> */}
 
       {/* Category Filter */}
       <section className="px-4 mb-12">
@@ -134,14 +171,14 @@ const Portfolio = () => {
             {categories.map((category) => (
               <motion.button
                 key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => handleCategoryChange(category.id)}
                 className={`px-6 py-3 rounded-lg transition-all duration-300 ${
                   selectedCategory === category.id
                     ? 'bg-primary-600 text-white'
                     : 'glass text-gray-300 hover:text-white hover:bg-white/10'
                 }`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={MOTION_GESTURES.hover}
+                whileTap={MOTION_GESTURES.tap}
               >
                 {category.name}
               </motion.button>
@@ -158,25 +195,11 @@ const Portfolio = () => {
               <motion.div
                 key={project.id}
                 className="card-3d cursor-pointer group"
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-onClick={() => {
-                  if (project.title === '交互式3D展厅') {
-                    setShowGallery(true);
-                  } else if (project.title === '产品可视化工具') {
-                    setShowProductVisualization(true);
-                  } else if (project.title === '数据可视化大屏') {
-                    setShowProductionDashboard(true);
-                  } else if (project.title === '虚拟现实体验') {
-                    setShowVRExperience(true);
-                  } else if (project.title === '建筑可视化') {
-                    setShowArchitecturalVisualization(true);
-                  } else {
-                    setSelectedProject(project);
-                  }
-                }}
-                whileHover={{ y: -10 }}
+                variants={createDelayedAnimation(index * 0.1)}
+                initial="hidden"
+                animate="visible"
+                onClick={() => handleProjectClick(project)}
+                whileHover={MOTION_GESTURES.hoverUp}
               >
                 {/* Project Preview */}
                 <div 
@@ -239,7 +262,13 @@ onClick={() => {
             >
               ×
             </button>
-            <InteractiveGallery3D />
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+              </div>
+            }>
+              <InteractiveGallery3D />
+            </Suspense>
           </div>
         </motion.div>
       )}
@@ -259,7 +288,13 @@ onClick={() => {
             >
               ×
             </button>
-            <ProductVisualization />
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+              </div>
+            }>
+              <ProductVisualization />
+            </Suspense>
           </div>
         </motion.div>
       )}
@@ -279,7 +314,13 @@ onClick={() => {
             >
               ×
             </button>
-            <ProductionDashboard />
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+              </div>
+            }>
+              <ProductionDashboard />
+            </Suspense>
           </div>
         </motion.div>
       )}
@@ -354,7 +395,13 @@ onClick={() => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          <VRExperience />
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+            </div>
+          }>
+            <VRExperience />
+          </Suspense>
          </motion.div>
        )}
 
@@ -374,7 +421,13 @@ onClick={() => {
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
              </svg>
            </button>
-           <ArchitecturalVisualization />
+           <Suspense fallback={
+             <div className="flex items-center justify-center h-full">
+               <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+             </div>
+           }>
+             <ArchitecturalVisualization />
+           </Suspense>
          </motion.div>
        )}
     </div>

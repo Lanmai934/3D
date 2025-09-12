@@ -1,22 +1,67 @@
-import { motion } from 'framer-motion';
-import Scene3D from '../components/3d/Scene3D';
-import FloatingCube from '../components/3d/FloatingCube';
-import ParticleField from '../components/3d/ParticleField';
+import { Suspense, lazy, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { 
+  motion,
+  MOTION_VARIANTS,
+  MOTION_TRANSITIONS,
+  MOTION_GESTURES,
+  createDelayedAnimation
+} from '../utils/motionShared';
+
+// 懒加载3D组件以提高初始加载性能
+const Scene3D = lazy(() => import('../components/3d/Scene3D'));
+const FloatingCube = lazy(() => import('../components/3d/FloatingCube'));
+const ParticleField = lazy(() => import('../components/3d/ParticleField'));
 
 const Home = () => {
+  // 缓存3D组件配置以避免重复渲染
+  const cubeConfigs = useMemo(() => [
+    { position: [0, 0, 0] as [number, number, number], color: '#3b82f6', text: '3D' },
+    { position: [-3, 1, -2] as [number, number, number], color: '#8b5cf6', text: 'React' },
+    { position: [3, -1, -1] as [number, number, number], color: '#06b6d4', text: 'Three' }
+  ], []);
+  
+  // 缓存特性数据以避免重复渲染
+  const features = useMemo(() => [
+    {
+      title: 'React + Three.js',
+      description: '结合React的组件化开发与Three.js的强大3D渲染能力',
+      icon: '⚛️'
+    },
+    {
+      title: '响应式设计',
+      description: '适配各种设备尺寸，提供一致的用户体验',
+      icon: '📱'
+    },
+    {
+      title: '性能优化',
+      description: '采用最佳实践，确保流畅的3D渲染性能',
+      icon: '⚡'
+    }
+  ], []);
   return (
     <div className="relative">
       {/* Hero Section with 3D Scene */}
       <section className="h-screen relative overflow-hidden">
         {/* 3D Background */}
         <div className="absolute inset-0">
-          <Scene3D enableControls={true} showEnvironment={true}>
-            <ParticleField count={800} radius={15} />
-            <FloatingCube position={[0, 0, 0]} color="#3b82f6" text="3D" />
-            <FloatingCube position={[-3, 1, -2]} color="#8b5cf6" text="React" />
-            <FloatingCube position={[3, -1, -1]} color="#06b6d4" text="Three" />
-          </Scene3D>
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+            </div>
+          }>
+            <Scene3D enableControls={true} showEnvironment={true}>
+              <ParticleField count={600} radius={12} />
+              {cubeConfigs.map((config, index) => (
+                <FloatingCube
+                  key={index}
+                  position={config.position}
+                  color={config.color}
+                  text={config.text}
+                />
+              ))}
+            </Scene3D>
+          </Suspense>
         </div>
         
         {/* Overlay Content */}
@@ -98,23 +143,7 @@ const Home = () => {
           </motion.div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                title: 'React + Three.js',
-                description: '结合React的组件化开发与Three.js的强大3D渲染能力',
-                icon: '⚛️'
-              },
-              {
-                title: '响应式设计',
-                description: '适配各种设备尺寸，提供一致的用户体验',
-                icon: '📱'
-              },
-              {
-                title: '性能优化',
-                description: '采用最佳实践，确保流畅的3D渲染性能',
-                icon: '⚡'
-              }
-            ].map((feature, index) => (
+            {features.map((feature, index) => (
               <motion.div
                 key={index}
                 className="card-3d text-center"

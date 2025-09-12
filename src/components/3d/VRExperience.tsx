@@ -1,9 +1,25 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Text, Environment, Stars, Float } from '@react-three/drei';
-import { Mesh } from 'three';
-import * as THREE from 'three';
-import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Mesh, 
+  Points, 
+  DoubleSide,
+  BufferGeometry,
+  BufferAttribute,
+  PointsMaterial,
+  MeshStandardMaterial,
+  MeshBasicMaterial,
+  SphereGeometry,
+  RingGeometry
+} from '../../../utils/threeShared';
+import { 
+  motion, 
+  AnimatePresence,
+  MOTION_VARIANTS,
+  MOTION_TRANSITIONS,
+  MOTION_GESTURES
+} from '../../../utils/motionShared';
 
 // VR场景类型
 type VRScene = 'space' | 'underwater' | 'forest' | 'city' | 'museum';
@@ -20,11 +36,11 @@ interface Hotspot {
 }
 
 // 浮动粒子组件
-const FloatingParticles: React.FC<{ scene: VRScene }> = ({ scene }) => {
-  const particlesRef = useRef<THREE.Points>(null);
-  const particleCount = 200;
+const FloatingParticles: React.FC<{ scene: VRScene }> = React.memo(({ scene }) => {
+  const particlesRef = useRef<Points>(null);
+  const particleCount = 150; // 减少粒子数量
   
-  const getParticleColor = () => {
+  const particleColor = useMemo(() => {
     switch (scene) {
       case 'space': return '#ffffff';
       case 'underwater': return '#00bfff';
@@ -33,41 +49,44 @@ const FloatingParticles: React.FC<{ scene: VRScene }> = ({ scene }) => {
       case 'museum': return '#dda0dd';
       default: return '#ffffff';
     }
-  };
+  }, [scene]);
 
   useFrame(() => {
     if (particlesRef.current) {
-      particlesRef.current.rotation.y += 0.001;
-      particlesRef.current.rotation.x += 0.0005;
+      particlesRef.current.rotation.y += 0.0008; // 减慢动画
+      particlesRef.current.rotation.x += 0.0004;
     }
   });
 
-  const positions = new Float32Array(particleCount * 3);
-  for (let i = 0; i < particleCount; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 50;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
-  }
+  const positions = useMemo(() => {
+    const pos = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 50;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 50;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 50;
+    }
+    return pos;
+  }, [particleCount]);
 
   return (
     <points ref={particlesRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={particleCount}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        color={getParticleColor()}
-        size={0.1}
-        transparent
-        opacity={0.6}
-      />
-    </points>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              count={particleCount}
+              array={positions}
+              itemSize={3}
+            />
+          </bufferGeometry>
+          <pointsMaterial
+            color={particleColor}
+            size={0.1}
+            transparent
+            opacity={0.6}
+          />
+        </points>
   );
-};
+});
 
 // 3D热点组件
 interface HotspotMarkerProps {
@@ -76,27 +95,27 @@ interface HotspotMarkerProps {
   isSelected: boolean;
 }
 
-const HotspotMarker: React.FC<HotspotMarkerProps> = ({ hotspot, onSelect, isSelected }) => {
+const HotspotMarker: React.FC<HotspotMarkerProps> = React.memo(({ hotspot, onSelect, isSelected }) => {
   const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
-  useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.position.y = hotspot.position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
-      if (isSelected || hovered) {
-        meshRef.current.rotation.y += 0.02;
-      }
-    }
-  });
-
-  const getHotspotColor = () => {
+  const hotspotColor = useMemo(() => {
     switch (hotspot.type) {
       case 'info': return '#4a90e2';
       case 'teleport': return '#50c878';
       case 'interaction': return '#ff6b6b';
       default: return '#ffffff';
     }
-  };
+  }, [hotspot.type]);
+
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.position.y = hotspot.position[1] + Math.sin(state.clock.elapsedTime * 1.5) * 0.08; // 减慢动画
+      if (isSelected || hovered) {
+        meshRef.current.rotation.y += 0.015; // 减慢旋转
+      }
+    }
+  });
 
   return (
     <group position={hotspot.position}>
@@ -109,8 +128,8 @@ const HotspotMarker: React.FC<HotspotMarkerProps> = ({ hotspot, onSelect, isSele
         >
           <sphereGeometry args={[0.2, 16, 16]} />
           <meshStandardMaterial
-            color={getHotspotColor()}
-            emissive={getHotspotColor()}
+            color={hotspotColor}
+            emissive={hotspotColor}
             emissiveIntensity={hovered || isSelected ? 0.5 : 0.2}
             transparent
             opacity={0.8}
@@ -121,10 +140,10 @@ const HotspotMarker: React.FC<HotspotMarkerProps> = ({ hotspot, onSelect, isSele
         <mesh>
           <ringGeometry args={[0.3, 0.4, 32]} />
           <meshBasicMaterial
-            color={getHotspotColor()}
+            color={hotspotColor}
             transparent
             opacity={0.3}
-            side={THREE.DoubleSide}
+            side={DoubleSide}
           />
         </mesh>
         
@@ -143,15 +162,15 @@ const HotspotMarker: React.FC<HotspotMarkerProps> = ({ hotspot, onSelect, isSele
       </Float>
     </group>
   );
-};
+});
 
 // VR环境组件
 interface VREnvironmentProps {
   scene: VRScene;
 }
 
-const VREnvironment: React.FC<VREnvironmentProps> = ({ scene }) => {
-  const getEnvironmentPreset = () => {
+const VREnvironment: React.FC<VREnvironmentProps> = React.memo(({ scene }) => {
+  const environmentPreset = useMemo(() => {
     switch (scene) {
       case 'space': return 'night';
       case 'underwater': return 'dawn';
@@ -160,9 +179,9 @@ const VREnvironment: React.FC<VREnvironmentProps> = ({ scene }) => {
       case 'museum': return 'studio';
       default: return 'sunset';
     }
-  };
+  }, [scene]);
 
-  const getBackgroundColor = () => {
+  const backgroundColor = useMemo(() => {
     switch (scene) {
       case 'space': return '#000011';
       case 'underwater': return '#006994';
@@ -171,17 +190,17 @@ const VREnvironment: React.FC<VREnvironmentProps> = ({ scene }) => {
       case 'museum': return '#f5f5f5';
       default: return '#87ceeb';
     }
-  };
+  }, [scene]);
 
   return (
     <>
-      <color attach="background" args={[getBackgroundColor()]} />
-      <Environment preset={getEnvironmentPreset()} />
-      {scene === 'space' && <Stars radius={100} depth={50} count={5000} factor={4} />}
+      <color attach="background" args={[backgroundColor]} />
+      <Environment preset={environmentPreset} />
+      {scene === 'space' && <Stars radius={100} depth={50} count={3000} factor={3} />}
       <FloatingParticles scene={scene} />
     </>
   );
-};
+});
 
 // VR场景选择器
 interface VRSceneSelectorProps {
@@ -189,14 +208,14 @@ interface VRSceneSelectorProps {
   onSceneChange: (scene: VRScene) => void;
 }
 
-const VRSceneSelector: React.FC<VRSceneSelectorProps> = ({ currentScene, onSceneChange }) => {
-  const scenes: { id: VRScene; name: string; icon: string }[] = [
-    { id: 'space', name: '太空探索', icon: '🚀' },
-    { id: 'underwater', name: '深海世界', icon: '🌊' },
-    { id: 'forest', name: '神秘森林', icon: '🌲' },
-    { id: 'city', name: '未来都市', icon: '🏙️' },
-    { id: 'museum', name: '虚拟博物馆', icon: '🏛️' }
-  ];
+const VRSceneSelector: React.FC<VRSceneSelectorProps> = React.memo(({ currentScene, onSceneChange }) => {
+  const scenes = useMemo(() => [
+    { id: 'space' as VRScene, name: '太空探索', icon: '🚀' },
+    { id: 'underwater' as VRScene, name: '深海世界', icon: '🌊' },
+    { id: 'forest' as VRScene, name: '神秘森林', icon: '🌲' },
+    { id: 'city' as VRScene, name: '未来都市', icon: '🏙️' },
+    { id: 'museum' as VRScene, name: '虚拟博物馆', icon: '🏛️' }
+  ], []);
 
   return (
     <div className="absolute top-4 left-4 z-10">
@@ -223,7 +242,7 @@ const VRSceneSelector: React.FC<VRSceneSelectorProps> = ({ currentScene, onScene
       </div>
     </div>
   );
-};
+});
 
 // VR控制面板
 interface VRControlPanelProps {
@@ -233,7 +252,7 @@ interface VRControlPanelProps {
   onCloseHotspot: () => void;
 }
 
-const VRControlPanel: React.FC<VRControlPanelProps> = ({
+const VRControlPanel: React.FC<VRControlPanelProps> = React.memo(({
   isVRMode,
   onToggleVR,
   selectedHotspot,
@@ -289,7 +308,7 @@ const VRControlPanel: React.FC<VRControlPanelProps> = ({
       </AnimatePresence>
     </>
   );
-};
+});
 
 // 主VR体验组件
 const VRExperience: React.FC = () => {
@@ -408,14 +427,26 @@ const VRExperience: React.FC = () => {
     setIsVRMode(!isVRMode);
   }, [isVRMode]);
 
-  const currentHotspots = getSceneHotspots(currentScene);
+  const currentHotspots = useMemo(() => getSceneHotspots(currentScene), [currentScene]);
+
+  const cameraConfig = useMemo(() => ({
+    position: [0, 0, 5] as [number, number, number],
+    fov: isVRMode ? 110 : 75
+  }), [isVRMode]);
+
+  const glConfig = useMemo(() => ({
+    antialias: true,
+    powerPreference: 'high-performance' as const,
+    alpha: false
+  }), []);
 
   return (
     <div className="w-full h-screen relative bg-black">
       {/* 3D场景 */}
       <Canvas
-        camera={{ position: [0, 0, 5], fov: isVRMode ? 110 : 75 }}
-        gl={{ antialias: true }}
+        camera={cameraConfig}
+        gl={glConfig}
+        performance={{ min: 0.5 }}
       >
         {/* 环境设置 */}
         <VREnvironment scene={currentScene} />

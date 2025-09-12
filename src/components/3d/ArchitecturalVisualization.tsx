@@ -1,9 +1,25 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Box, Plane, Text, Environment, Sky } from '@react-three/drei';
-import { Group } from 'three';
-import * as THREE from 'three';
-import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Group,
+  DoubleSide,
+  BufferGeometry,
+  LineBasicMaterial,
+  EdgesGeometry,
+  LineSegments,
+  PlaneGeometry,
+  createOptimizedGeometry
+} from '../../utils/threeShared';
+import { 
+  motion, 
+  AnimatePresence,
+  MOTION_VARIANTS,
+  MOTION_TRANSITIONS,
+  MOTION_GESTURES,
+  createDelayedAnimation
+} from '../../utils/motionShared';
+import { usePerformanceOptimization } from '../../utils/performanceOptimizer';
 
 // 建筑视图类型
 type ViewMode = 'exterior' | 'interior' | 'blueprint' | 'landscape';
@@ -32,18 +48,18 @@ interface RoomInfo {
 }
 
 // 3D建筑主体组件
-const BuildingStructure: React.FC<{ viewMode: ViewMode; onRoomClick: (room: RoomInfo) => void }> = ({ viewMode, onRoomClick }) => {
+const BuildingStructure: React.FC<{ viewMode: ViewMode; onRoomClick: (room: RoomInfo) => void }> = React.memo(({ viewMode, onRoomClick }) => {
   const buildingRef = useRef<Group>(null);
   const [hoveredRoom, setHoveredRoom] = useState<string | null>(null);
 
   useFrame(() => {
     if (buildingRef.current && viewMode === 'exterior') {
-      buildingRef.current.rotation.y += 0.002;
+      buildingRef.current.rotation.y += 0.0015; // 减慢旋转速度
     }
   });
 
-  // 房间数据
-  const rooms: RoomInfo[] = [
+  // 房间数据缓存
+  const rooms = useMemo((): RoomInfo[] => [
     {
       id: 'living',
       name: '客厅',
@@ -76,9 +92,9 @@ const BuildingStructure: React.FC<{ viewMode: ViewMode; onRoomClick: (room: Room
       materials: ['防滑瓷砖', '防水涂料', '钢化玻璃'],
       lighting: '防水吸顶灯'
     }
-  ];
+  ], []);
 
-  const getRoomColor = (roomId: string) => {
+  const getRoomColor = useCallback((roomId: string) => {
     const colors = {
       living: '#4a90e2',
       kitchen: '#f39c12',
@@ -86,13 +102,13 @@ const BuildingStructure: React.FC<{ viewMode: ViewMode; onRoomClick: (room: Room
       bathroom: '#1abc9c'
     };
     return colors[roomId as keyof typeof colors] || '#95a5a6';
-  };
+  }, []);
 
-  const getRoomOpacity = (roomId: string) => {
+  const getRoomOpacity = useCallback((roomId: string) => {
     if (viewMode === 'blueprint') return 0.1;
     if (viewMode === 'interior') return hoveredRoom === roomId ? 0.8 : 0.6;
     return hoveredRoom === roomId ? 0.9 : 0.7;
-  };
+  }, [viewMode, hoveredRoom]);
 
   return (
     <group ref={buildingRef}>
@@ -197,7 +213,7 @@ const BuildingStructure: React.FC<{ viewMode: ViewMode; onRoomClick: (room: Room
             <>
               {/* 外墙 */}
               <lineSegments>
-                <edgesGeometry args={[new THREE.PlaneGeometry(8, 6)]} />
+                <edgesGeometry args={[createOptimizedGeometry.plane(8, 6)]} />
                 <lineBasicMaterial color="#2c3e50" linewidth={2} />
               </lineSegments>
               
@@ -285,7 +301,7 @@ const BuildingStructure: React.FC<{ viewMode: ViewMode; onRoomClick: (room: Room
       )}
     </group>
   );
-};
+});
 
 // 视图模式选择器
 interface ViewModeSelectorProps {
@@ -293,13 +309,13 @@ interface ViewModeSelectorProps {
   onModeChange: (mode: ViewMode) => void;
 }
 
-const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({ currentMode, onModeChange }) => {
-  const modes: { id: ViewMode; name: string; icon: string; description: string }[] = [
+const ViewModeSelector: React.FC<ViewModeSelectorProps> = React.memo(({ currentMode, onModeChange }) => {
+  const modes = useMemo(() => [
     { id: 'exterior', name: '外观视图', icon: '🏢', description: '建筑外立面展示' },
     { id: 'interior', name: '室内布局', icon: '🏠', description: '内部空间规划' },
     { id: 'blueprint', name: '平面图', icon: '📐', description: '建筑平面设计' },
     { id: 'landscape', name: '景观视图', icon: '🌳', description: '周边环境展示' }
-  ];
+  ], []);
 
   return (
     <div className="absolute top-4 left-4 z-10">
@@ -329,7 +345,7 @@ const ViewModeSelector: React.FC<ViewModeSelectorProps> = ({ currentMode, onMode
       </div>
     </div>
   );
-};
+});
 
 // 建筑信息面板
 interface BuildingInfoPanelProps {
@@ -338,33 +354,36 @@ interface BuildingInfoPanelProps {
   onCloseRoom: () => void;
 }
 
-const BuildingInfoPanel: React.FC<BuildingInfoPanelProps> = ({ buildingInfo, selectedRoom, onCloseRoom }) => {
+const BuildingInfoPanel: React.FC<BuildingInfoPanelProps> = React.memo(({ buildingInfo, selectedRoom, onCloseRoom }) => {
+  const buildingDetails = useMemo(() => [
+    { label: '建筑类型', value: buildingInfo.type },
+    { label: '建筑面积', value: buildingInfo.area },
+    { label: '楼层数', value: `${buildingInfo.floors}层` },
+    { label: '建造年份', value: buildingInfo.year },
+    { label: '设计师', value: buildingInfo.architect }
+  ], [buildingInfo]);
+
+  const roomDetails = useMemo(() => {
+    if (!selectedRoom) return null;
+    return [
+      { label: '面积', value: selectedRoom.area },
+      { label: '功能', value: selectedRoom.function },
+      { label: '照明', value: selectedRoom.lighting }
+    ];
+  }, [selectedRoom]);
+
   return (
     <div className="absolute top-4 right-4 z-10">
       <div className="bg-black bg-opacity-80 text-white p-6 rounded-lg max-w-sm">
         <h2 className="text-xl font-bold mb-4">{buildingInfo.name}</h2>
         
         <div className="space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-300">建筑类型:</span>
-            <span>{buildingInfo.type}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-300">建筑面积:</span>
-            <span>{buildingInfo.area}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-300">楼层数:</span>
-            <span>{buildingInfo.floors}层</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-300">建造年份:</span>
-            <span>{buildingInfo.year}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-300">设计师:</span>
-            <span>{buildingInfo.architect}</span>
-          </div>
+          {buildingDetails.map(({ label, value }) => (
+            <div key={label} className="flex justify-between">
+              <span className="text-gray-300">{label}:</span>
+              <span>{value}</span>
+            </div>
+          ))}
         </div>
         
         <div className="mt-4">
@@ -404,18 +423,12 @@ const BuildingInfoPanel: React.FC<BuildingInfoPanelProps> = ({ buildingInfo, sel
             </div>
             
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-300">面积:</span>
-                <span>{selectedRoom.area}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-300">功能:</span>
-                <span>{selectedRoom.function}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-300">照明:</span>
-                <span>{selectedRoom.lighting}</span>
-              </div>
+              {roomDetails?.map(({ label, value }) => (
+                <div key={label} className="flex justify-between">
+                  <span className="text-gray-300">{label}:</span>
+                  <span>{value}</span>
+                </div>
+              ))}
             </div>
             
             <div className="mt-3">
@@ -436,16 +449,32 @@ const BuildingInfoPanel: React.FC<BuildingInfoPanelProps> = ({ buildingInfo, sel
       </AnimatePresence>
     </div>
   );
-};
+});
+
+// 性能监控组件 - 已禁用以避免在复杂场景中的误报
+const PerformanceMonitor: React.FC = React.memo(() => {
+  // 注释掉性能监控以避免在建筑可视化中的警告
+  // const { gl, scene } = useThree();
+  // const { startOptimization } = usePerformanceOptimization();
+
+  // useEffect(() => {
+  //   if (gl && scene) {
+  //     startOptimization(gl, scene);
+  //   }
+  // }, [gl, scene, startOptimization]);
+
+  return null;
+});
 
 // 主建筑可视化组件
 const ArchitecturalVisualization: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('exterior');
   const [selectedRoom, setSelectedRoom] = useState<RoomInfo | null>(null);
   const [isWireframe, setIsWireframe] = useState(false);
+  const { isOptimized, performanceLevel } = usePerformanceOptimization();
 
-  // 建筑信息数据
-  const buildingInfo: BuildingInfo = {
+  // 建筑信息数据 - 使用useMemo缓存
+  const buildingInfo: BuildingInfo = useMemo(() => ({
     id: 'modern-house',
     name: '现代简约住宅',
     type: '独栋别墅',
@@ -455,7 +484,7 @@ const ArchitecturalVisualization: React.FC = () => {
     architect: '张建筑师',
     description: '采用现代简约设计理念，注重空间的开放性和功能性，融合了环保材料和智能家居系统。',
     features: ['节能环保', '智能家居', '开放式设计', '大面积采光', '现代简约']
-  };
+  }), []);
 
   const handleModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode);
@@ -474,6 +503,19 @@ const ArchitecturalVisualization: React.FC = () => {
     setIsWireframe(!isWireframe);
   }, [isWireframe]);
 
+  // 缓存相机配置
+  const cameraConfig = useMemo(() => ({
+    position: getCameraPosition(),
+    fov: 60
+  }), [viewMode]);
+
+  // 缓存WebGL配置
+  const glConfig = useMemo(() => ({
+    antialias: performanceLevel > 0.5,
+    preserveDrawingBuffer: true,
+    powerPreference: "high-performance" as const
+  }), [performanceLevel]);
+
   const getCameraPosition = (): [number, number, number] => {
     switch (viewMode) {
       case 'exterior': return [10, 8, 10];
@@ -488,8 +530,9 @@ const ArchitecturalVisualization: React.FC = () => {
     <div className="w-full h-screen relative bg-gradient-to-b from-sky-200 to-sky-50">
       {/* 3D场景 */}
       <Canvas
-        camera={{ position: getCameraPosition(), fov: 60 }}
-        gl={{ antialias: true }}
+        camera={cameraConfig}
+        gl={glConfig}
+        performance={{ min: 0.5 }}
       >
         {/* 环境设置 */}
         {viewMode === 'landscape' ? (
@@ -506,10 +549,13 @@ const ArchitecturalVisualization: React.FC = () => {
           position={[10, 10, 5]}
           intensity={1}
           castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
+          shadow-mapSize-width={isOptimized ? 2048 : 1024}
+          shadow-mapSize-height={isOptimized ? 2048 : 1024}
         />
         <pointLight position={[-10, 10, -5]} intensity={0.5} color="#ffd700" />
+        
+        {/* 性能监控 */}
+        <PerformanceMonitor />
         
         {/* 建筑结构 */}
         <BuildingStructure viewMode={viewMode} onRoomClick={handleRoomClick} />

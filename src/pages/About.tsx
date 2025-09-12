@@ -1,18 +1,24 @@
 import { motion } from 'framer-motion';
+import { useMemo, useCallback } from 'react';
 import Scene3D from '../components/3d/Scene3D';
 import FloatingCube from '../components/3d/FloatingCube';
+import { usePerformanceOptimization } from '../utils/performanceOptimizer';
 
 const About = () => {
-  const skills = [
+  const { getMetrics } = usePerformanceOptimization();
+  
+  // 缓存技能数据
+  const skills = useMemo(() => [
     { name: 'React', level: 95, color: '#61dafb' },
     { name: 'Three.js', level: 90, color: '#000000' },
     { name: 'TypeScript', level: 88, color: '#3178c6' },
     { name: 'WebGL', level: 85, color: '#990000' },
     { name: 'Blender', level: 80, color: '#f5792a' },
     { name: 'GLSL', level: 75, color: '#5586a4' }
-  ];
+  ], []);
 
-  const timeline = [
+  // 缓存时间线数据
+  const timeline = useMemo(() => [
     {
       year: '2024',
       title: '高级3D开发工程师',
@@ -37,7 +43,7 @@ const About = () => {
       company: '自学阶段',
       description: '开始学习Three.js和WebGL技术，完成了第一个3D Web项目。'
     }
-  ];
+  ], []);
 
   return (
     <div className="pt-16 min-h-screen">
@@ -93,29 +99,11 @@ const About = () => {
 
           <div className="grid md:grid-cols-2 gap-8">
             {skills.map((skill, index) => (
-              <motion.div
+              <SkillCard 
                 key={skill.name}
-                className="glass p-6 rounded-xl"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-lg font-semibold text-white">{skill.name}</h3>
-                  <span className="text-sm text-gray-300">{skill.level}%</span>
-                </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
-                  <motion.div
-                    className="h-2 rounded-full"
-                    style={{ backgroundColor: skill.color }}
-                    initial={{ width: 0 }}
-                    whileInView={{ width: `${skill.level}%` }}
-                    transition={{ duration: 1, delay: index * 0.1 + 0.5 }}
-                    viewport={{ once: true }}
-                  />
-                </div>
-              </motion.div>
+                skill={skill}
+                index={index}
+              />
             ))}
           </div>
         </div>
@@ -144,27 +132,11 @@ const About = () => {
             <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-primary-600"></div>
             
             {timeline.map((item, index) => (
-              <motion.div
-                key={index}
-                className="relative flex items-start mb-12 last:mb-0"
-                initial={{ opacity: 0, x: -50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.2 }}
-                viewport={{ once: true }}
-              >
-                {/* Timeline Dot */}
-                <div className="absolute left-6 w-4 h-4 bg-primary-600 rounded-full border-4 border-dark-300"></div>
-                
-                {/* Content */}
-                <div className="ml-16 glass p-6 rounded-xl flex-1">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
-                    <h3 className="text-xl font-semibold text-white">{item.title}</h3>
-                    <span className="text-primary-400 font-medium">{item.year}</span>
-                  </div>
-                  <p className="text-primary-300 mb-3">{item.company}</p>
-                  <p className="text-gray-300">{item.description}</p>
-                </div>
-              </motion.div>
+              <TimelineItem 
+                key={`${item.year}-${index}`}
+                item={item}
+                index={index}
+              />
             ))}
           </div>
         </div>
@@ -196,5 +168,55 @@ const About = () => {
     </div>
   );
 };
+
+// 记忆化技能卡片组件
+const SkillCard = React.memo<{ skill: typeof skills[0]; index: number }>(({ skill, index }) => (
+  <motion.div
+    className="glass p-6 rounded-xl"
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6, delay: index * 0.08 }} // 减少延迟提升性能
+    viewport={{ once: true, margin: "-50px" }} // 优化视口检测
+  >
+    <div className="flex justify-between items-center mb-3">
+      <h3 className="text-lg font-semibold text-white">{skill.name}</h3>
+      <span className="text-sm text-gray-300">{skill.level}%</span>
+    </div>
+    <div className="w-full bg-gray-700 rounded-full h-2">
+      <motion.div
+        className="h-2 rounded-full"
+        style={{ backgroundColor: skill.color }}
+        initial={{ width: 0 }}
+        whileInView={{ width: `${skill.level}%` }}
+        transition={{ duration: 0.8, delay: index * 0.08 + 0.3 }} // 优化动画时长
+        viewport={{ once: true, margin: "-50px" }}
+      />
+    </div>
+  </motion.div>
+));
+
+// 记忆化时间线项组件
+const TimelineItem = React.memo<{ item: typeof timeline[0]; index: number }>(({ item, index }) => (
+  <motion.div
+    className="relative flex items-start mb-12 last:mb-0"
+    initial={{ opacity: 0, x: -50 }}
+    whileInView={{ opacity: 1, x: 0 }}
+    transition={{ duration: 0.5, delay: index * 0.15 }} // 优化动画时长
+    viewport={{ once: true, margin: "-30px" }} // 优化视口检测
+  >
+    {/* Timeline Dot */}
+    <div className="absolute left-6 w-4 h-4 bg-primary-600 rounded-full border-4 border-dark-300"></div>
+    
+    {/* Content */}
+    <div className="ml-16 glass p-6 rounded-xl flex-1">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
+        <h3 className="text-xl font-semibold text-white">{item.title}</h3>
+        <span className="text-primary-400 font-medium">{item.year}</span>
+      </div>
+      <p className="text-primary-300 mb-3">{item.company}</p>
+      <p className="text-gray-300">{item.description}</p>
+    </div>
+  </motion.div>
+));
 
 export default About;

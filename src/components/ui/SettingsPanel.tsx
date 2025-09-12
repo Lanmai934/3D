@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import PerformancePanel from './PerformancePanel';
 
 interface SettingsState {
   quality: 'low' | 'medium' | 'high';
@@ -12,6 +13,7 @@ interface SettingsState {
 
 const SettingsPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showPerformancePanel, setShowPerformancePanel] = useState(false);
   const [settings, setSettings] = useState<SettingsState>({
     quality: 'medium',
     shadows: true,
@@ -29,6 +31,7 @@ const SettingsPanel = () => {
     
     // 应用设置到全局状态
     if (key === 'showStats') {
+      setShowPerformancePanel(value as boolean);
       // 触发性能监控显示/隐藏
       const event = new CustomEvent('toggleStats', { detail: value });
       window.dispatchEvent(event);
@@ -44,6 +47,7 @@ const SettingsPanel = () => {
       autoRotate: false,
       showStats: false
     });
+    setShowPerformancePanel(false);
   };
 
   const getQualityDescription = (quality: string) => {
@@ -208,6 +212,15 @@ const SettingsPanel = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 性能监控面板 */}
+      <PerformancePanel 
+        isVisible={showPerformancePanel} 
+        onClose={() => {
+          setShowPerformancePanel(false);
+          setSettings(prev => ({ ...prev, showStats: false }));
+        }} 
+      />
     </>
   );
 };

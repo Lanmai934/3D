@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Text, Box, Plane, Environment } from '@react-three/drei';
 import { Mesh } from 'three';
@@ -21,18 +21,26 @@ interface ExhibitProps {
   onSelect: (id: string) => void;
 }
 
-const Exhibit: React.FC<ExhibitProps> = ({ item, isSelected, onSelect }) => {
+const Exhibit: React.FC<ExhibitProps> = React.memo(({ item, isSelected, onSelect }) => {
   const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
+  // 缓存材质属性
+  const materialProps = useMemo(() => ({
+    color: hovered || isSelected ? '#ff6b6b' : item.color,
+    emissive: isSelected ? '#ff3333' : '#000000',
+    emissiveIntensity: isSelected ? 0.2 : 0
+  }), [hovered, isSelected, item.color]);
+
   useFrame((state) => {
     if (meshRef.current) {
-      // 悬浮动画
-      meshRef.current.position.y = item.position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+      // 优化动画计算
+      const time = state.clock.elapsedTime;
+      meshRef.current.position.y = item.position[1] + Math.sin(time * 1.5) * 0.08;
       
       // 选中时的旋转动画
       if (isSelected) {
-        meshRef.current.rotation.y += 0.02;
+        meshRef.current.rotation.y += 0.015;
       }
     }
   });
@@ -51,11 +59,7 @@ const Exhibit: React.FC<ExhibitProps> = ({ item, isSelected, onSelect }) => {
         onPointerOver={() => setHovered(true)}
         onPointerOut={() => setHovered(false)}
       >
-        <meshStandardMaterial
-          color={hovered || isSelected ? '#ff6b6b' : item.color}
-          emissive={isSelected ? '#ff3333' : '#000000'}
-          emissiveIntensity={isSelected ? 0.2 : 0}
-        />
+        <meshStandardMaterial {...materialProps} />
       </Box>
       
       {/* 展品标题 */}
@@ -83,19 +87,19 @@ const Exhibit: React.FC<ExhibitProps> = ({ item, isSelected, onSelect }) => {
       )}
     </group>
   );
-};
+});
 
 // 展厅地面
-const GalleryFloor: React.FC = () => {
+const GalleryFloor: React.FC = React.memo(() => {
   return (
     <Plane args={[50, 50]} rotation={[-Math.PI / 2, 0, 0]} position={[0, -3, 0]}>
       <meshStandardMaterial color="#2c2c2c" />
     </Plane>
   );
-};
+});
 
 // 展厅墙壁
-const GalleryWalls: React.FC = () => {
+const GalleryWalls: React.FC = React.memo(() => {
   return (
     <>
       {/* 后墙 */}
@@ -114,10 +118,10 @@ const GalleryWalls: React.FC = () => {
       </Plane>
     </>
   );
-};
+});
 
 // 展厅照明
-const GalleryLighting: React.FC = () => {
+const GalleryLighting: React.FC = React.memo(() => {
   return (
     <>
       {/* 环境光 */}
@@ -146,7 +150,7 @@ const GalleryLighting: React.FC = () => {
       <pointLight position={[10, 10, 10]} intensity={0.5} color="#e24a4a" />
     </>
   );
-};
+});
 
 // 信息面板组件
 interface InfoPanelProps {
@@ -154,7 +158,7 @@ interface InfoPanelProps {
   onClose: () => void;
 }
 
-const InfoPanel: React.FC<InfoPanelProps> = ({ selectedItem, onClose }) => {
+const InfoPanel: React.FC<InfoPanelProps> = React.memo(({ selectedItem, onClose }) => {
   if (!selectedItem) return null;
 
   return (
@@ -178,14 +182,14 @@ const InfoPanel: React.FC<InfoPanelProps> = ({ selectedItem, onClose }) => {
       </div>
     </div>
   );
-};
+});
 
 // 主展厅组件
 const InteractiveGallery3D: React.FC = () => {
   const [selectedExhibit, setSelectedExhibit] = useState<string | null>(null);
 
-  // 展品数据
-  const exhibits: ExhibitItem[] = [
+  // 缓存展品数据
+  const exhibits: ExhibitItem[] = useMemo(() => [
     {
       id: '1',
       title: '数字艺术作品',
@@ -226,7 +230,7 @@ const InteractiveGallery3D: React.FC = () => {
       color: '#ffa500',
       type: 'artwork'
     }
-  ];
+  ], []);
 
   const handleExhibitSelect = useCallback((id: string) => {
     setSelectedExhibit(selectedExhibit === id ? null : id);
@@ -236,14 +240,28 @@ const InteractiveGallery3D: React.FC = () => {
     setSelectedExhibit(null);
   }, []);
 
-  const selectedItem = exhibits.find(item => item.id === selectedExhibit) || null;
+  // 缓存选中的展品
+  const selectedItem = useMemo(() => 
+    exhibits.find(item => item.id === selectedExhibit) || null,
+    [exhibits, selectedExhibit]
+  );
+
+  // 缓存相机配置
+  const cameraConfig = useMemo(() => ({
+    position: [0, 5, 20] as [number, number, number],
+    fov: 60
+  }), []);
 
   return (
     <div className="w-full h-screen relative">
       <Canvas
-        camera={{ position: [0, 5, 20], fov: 60 }}
+        camera={cameraConfig}
         shadows
         className="bg-gradient-to-b from-gray-900 to-black"
+        gl={{
+          antialias: true,
+          powerPreference: "high-performance"
+        }}
       >
         {/* 展厅环境 */}
         <GalleryFloor />

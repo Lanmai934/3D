@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows, Stats } from '@react-three/drei';
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 import { ACESFilmicToneMapping, SRGBColorSpace } from 'three';
 
 interface Scene3DProps {
@@ -18,21 +18,35 @@ const Scene3D = ({
   cameraPosition = [0, 0, 5],
   className = "h-screen w-full"
 }: Scene3DProps) => {
+  // 缓存相机配置以避免重复创建
+  const cameraConfig = useMemo(() => ({
+    position: cameraPosition,
+    fov: 75,
+    near: 0.1,
+    far: 1000
+  }), [cameraPosition]);
+  
+  // 缓存GL配置以提高性能
+  const glConfig = useMemo(() => ({
+    antialias: true,
+    alpha: true,
+    powerPreference: 'high-performance' as const,
+    toneMapping: ACESFilmicToneMapping,
+    outputColorSpace: SRGBColorSpace,
+    preserveDrawingBuffer: false,
+    logarithmicDepthBuffer: false,
+    precision: 'highp' as const
+  }), []);
   return (
     <div className={className}>
       <Canvas
-        camera={{ position: cameraPosition, fov: 75 }}
+        camera={cameraConfig}
         shadows
         dpr={[1, 2]}
-        gl={{
-          antialias: true,
-          alpha: true,
-          powerPreference: 'high-performance',
-          toneMapping: ACESFilmicToneMapping,
-          outputColorSpace: SRGBColorSpace
-        }}
-        performance={{ min: 0.5 }}
+        gl={glConfig}
+        performance={{ min: 0.5, max: 1, debounce: 200 }}
         frameloop="demand"
+        resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }}
       >
         <Suspense fallback={null}>
           {/* 环境光照 */}
@@ -41,8 +55,14 @@ const Scene3D = ({
             position={[10, 10, 5]}
             intensity={1}
             castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
+            shadow-camera-near={1}
+            shadow-camera-far={50}
+            shadow-camera-left={-10}
+            shadow-camera-right={10}
+            shadow-camera-top={10}
+            shadow-camera-bottom={-10}
           />
           
           {/* 环境贴图 */}
@@ -56,10 +76,12 @@ const Scene3D = ({
           {/* 地面阴影 */}
           <ContactShadows
             position={[0, -1.4, 0]}
-            opacity={0.75}
-            scale={10}
-            blur={2.5}
-            far={4}
+            opacity={0.5}
+            scale={8}
+            blur={1.5}
+            far={3}
+            resolution={512}
+            frames={1}
           />
           
           {/* 性能统计 */}

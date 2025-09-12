@@ -1,7 +1,15 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useMemo, useCallback } from 'react';
 import Scene3D from '../components/3d/Scene3D';
 import FloatingCube from '../components/3d/FloatingCube';
+import { cacheManager } from '../utils/cacheManager';
+import { performanceOptimizer } from '../utils/performanceOptimizer';
+import { 
+  motion,
+  MOTION_VARIANTS,
+  MOTION_TRANSITIONS,
+  MOTION_GESTURES,
+  createDelayedAnimation
+} from '../utils/motionShared';
 
 interface FormData {
   name: string;
@@ -20,40 +28,53 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
+    // 性能监控
+    const startTime = performance.now();
     
     // 模拟表单提交
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
       setSubmitStatus('success');
       setFormData({ name: '', email: '', subject: '', message: '' });
+      
+      // 缓存成功提交的表单数据（用于表单恢复）
+      cacheManager.set('lastSuccessfulSubmit', {
+        timestamp: Date.now(),
+        formData: { ...formData }
+      }, 24 * 60 * 60 * 1000); // 24小时
     } catch (error) {
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
       setTimeout(() => setSubmitStatus('idle'), 3000);
+      
+      // 记录性能指标
+      const duration = performance.now() - startTime;
+      performanceOptimizer.recordMetric('formSubmission', duration);
     }
-  };
+  }, [formData]);
 
-  const contactInfo = [
+  const contactInfo = useMemo(() => [
     {
       icon: '📧',
       title: '邮箱',
-  value: 'o@portfom',
-      link: '13298382579@163.com'
+      value: '13298382579@163.com',
+      link: 'mailto:13298382579@163.com'
     },
     {
       icon: '📱',
       title: '电话',
-      value: '+86  ',
-      link: 'tel:+8613800000000'
+      value: '+86 132 9838 2579',
+      link: 'tel:+8613298382579'
     },
     {
       icon: '📍',
@@ -67,14 +88,14 @@ const Contact = () => {
       value: 'www.3dportfolio.com',
       link: 'https://www.3dportfolio.com'
     }
-  ];
+  ], []);
 
-  const socialLinks = [
+  const socialLinks = useMemo(() => [
     { name: 'GitHub', icon: '🐙', url: 'https://github.com' },
     { name: 'LinkedIn', icon: '💼', url: 'https://linkedin.com' },
     { name: 'Twitter', icon: '🐦', url: 'https://twitter.com' },
     { name: 'Dribbble', icon: '🏀', url: 'https://dribbble.com' }
-  ];
+  ], []);
 
   return (
     <div className="pt-16 min-h-screen">
@@ -123,69 +144,50 @@ const Contact = () => {
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                      姓名 *
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 transition-colors"
-                      placeholder="您的姓名"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                      邮箱 *
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 transition-colors"
-                      placeholder="您的邮箱"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-gray-300 mb-2">
-                    主题 *
-                  </label>
-                  <input
+                  <FormField
+                    id="name"
+                    name="name"
                     type="text"
-                    id="subject"
-                    name="subject"
-                    value={formData.subject}
+                    label="姓名 *"
+                    placeholder="您的姓名"
+                    value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 transition-colors"
-                    placeholder="消息主题"
+                  />
+                  <FormField
+                    id="email"
+                    name="email"
+                    type="email"
+                    label="邮箱 *"
+                    placeholder="您的邮箱"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
                   />
                 </div>
                 
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-2">
-                    消息 *
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    required
-                    rows={6}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 transition-colors resize-none"
-                    placeholder="请详细描述您的项目需求或想法..."
-                  />
-                </div>
+                <FormField
+                  id="subject"
+                  name="subject"
+                  type="text"
+                  label="主题 *"
+                  placeholder="消息主题"
+                  value={formData.subject}
+                  onChange={handleInputChange}
+                  required
+                />
+                
+                <FormField
+                  id="message"
+                  name="message"
+                  type="textarea"
+                  label="消息 *"
+                  placeholder="请详细描述您的项目需求或想法..."
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  required
+                  rows={6}
+                />
                 
                 <motion.button
                   type="submit"
@@ -245,22 +247,11 @@ const Contact = () => {
               {/* Contact Details */}
               <div className="space-y-4">
                 {contactInfo.map((info, index) => (
-                  <motion.a
-                    key={index}
-                    href={info.link}
-                    className="glass p-4 rounded-xl flex items-center space-x-4 hover:bg-white/10 transition-all duration-300 block"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    viewport={{ once: true }}
-                    whileHover={{ scale: 1.02 }}
-                  >
-                    <div className="text-2xl">{info.icon}</div>
-                    <div>
-                      <h3 className="font-semibold text-white">{info.title}</h3>
-                      <p className="text-gray-300">{info.value}</p>
-                    </div>
-                  </motion.a>
+                  <ContactInfoCard
+                    key={`${info.title}-${index}`}
+                    info={info}
+                    index={index}
+                  />
                 ))}
               </div>
               
@@ -269,18 +260,10 @@ const Contact = () => {
                 <h3 className="text-xl font-semibold mb-4 text-white">社交媒体</h3>
                 <div className="flex space-x-4">
                   {socialLinks.map((social, index) => (
-                    <motion.a
-                      key={index}
-                      href={social.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-12 h-12 glass rounded-lg flex items-center justify-center text-xl hover:bg-white/20 transition-all duration-300"
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                      whileTap={{ scale: 0.95 }}
-                      title={social.name}
-                    >
-                      {social.icon}
-                    </motion.a>
+                    <SocialLink
+                      key={`${social.name}-${index}`}
+                      social={social}
+                    />
                   ))}
                 </div>
               </div>
@@ -303,5 +286,107 @@ const Contact = () => {
     </div>
   );
 };
+
+// 记忆化表单字段组件
+interface FormFieldProps {
+  id: string;
+  name: string;
+  type: 'text' | 'email' | 'textarea';
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  required?: boolean;
+  rows?: number;
+}
+
+const FormField = React.memo<FormFieldProps>(({ 
+  id, name, type, label, placeholder, value, onChange, required, rows 
+}) => {
+  const inputClassName = "w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-500 transition-colors";
+  
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-300 mb-2">
+        {label}
+      </label>
+      {type === 'textarea' ? (
+        <textarea
+          id={id}
+          name={name}
+          value={value}
+          onChange={onChange}
+          required={required}
+          rows={rows || 4}
+          className={`${inputClassName} resize-none`}
+          placeholder={placeholder}
+        />
+      ) : (
+        <input
+          type={type}
+          id={id}
+          name={name}
+          value={value}
+          onChange={onChange}
+          required={required}
+          className={inputClassName}
+          placeholder={placeholder}
+        />
+      )}
+    </div>
+  );
+});
+
+// 记忆化联系信息卡片组件
+interface ContactInfoCardProps {
+  info: {
+    icon: string;
+    title: string;
+    value: string;
+    link: string;
+  };
+  index: number;
+}
+
+const ContactInfoCard = React.memo<ContactInfoCardProps>(({ info, index }) => (
+  <motion.a
+    href={info.link}
+    className="glass p-4 rounded-xl flex items-center space-x-4 hover:bg-white/10 transition-all duration-300 block"
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: index * 0.08 }} // 优化动画时长
+    viewport={{ once: true, margin: "-30px" }} // 优化视口检测
+    whileHover={{ scale: 1.02 }}
+  >
+    <div className="text-2xl">{info.icon}</div>
+    <div>
+      <h3 className="font-semibold text-white">{info.title}</h3>
+      <p className="text-gray-300">{info.value}</p>
+    </div>
+  </motion.a>
+));
+
+// 记忆化社交链接组件
+interface SocialLinkProps {
+  social: {
+    name: string;
+    icon: string;
+    url: string;
+  };
+}
+
+const SocialLink = React.memo<SocialLinkProps>(({ social }) => (
+  <motion.a
+    href={social.url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="w-12 h-12 glass rounded-lg flex items-center justify-center text-xl hover:bg-white/20 transition-all duration-300"
+    whileHover={{ scale: 1.1, rotate: 5 }}
+    whileTap={{ scale: 0.95 }}
+    title={social.name}
+  >
+    {social.icon}
+  </motion.a>
+));
 
 export default Contact;

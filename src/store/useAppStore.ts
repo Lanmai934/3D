@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface AppState {
   // UI状态
@@ -27,35 +28,46 @@ interface AppState {
   setPortfolioFilter: (filter: string) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  // 初始状态
-  isLoading: false,
-  currentPage: '/',
-  theme: 'dark',
-  
-  sceneSettings: {
-    enableControls: true,
-    showEnvironment: true,
-    autoRotate: false,
-    animationSpeed: 1,
-  },
-  
-  selectedProject: null,
-  portfolioFilter: 'all',
-  
-  // Actions
-  setLoading: (loading) => set({ isLoading: loading }),
-  
-  setCurrentPage: (page) => set({ currentPage: page }),
-  
-  setTheme: (theme) => set({ theme }),
-  
-  updateSceneSettings: (settings) => 
-    set((state) => ({
-      sceneSettings: { ...state.sceneSettings, ...settings }
-    })),
-  
-  setSelectedProject: (projectId) => set({ selectedProject: projectId }),
-  
-  setPortfolioFilter: (filter) => set({ portfolioFilter: filter }),
-}));
+export const useAppStore = create<AppState>()(persist(
+  (set) => ({
+    // 初始状态
+    isLoading: false,
+    currentPage: '/',
+    theme: 'dark',
+    
+    sceneSettings: {
+      enableControls: true,
+      showEnvironment: true,
+      autoRotate: false,
+      animationSpeed: 1,
+    },
+    
+    selectedProject: null,
+    portfolioFilter: 'all',
+    
+    // Actions
+    setLoading: (loading) => set({ isLoading: loading }),
+    
+    setCurrentPage: (page) => set({ currentPage: page }),
+    
+    setTheme: (theme) => set({ theme }),
+    
+    updateSceneSettings: (settings) => 
+      set((state) => ({
+        sceneSettings: { ...state.sceneSettings, ...settings }
+      })),
+    
+    setSelectedProject: (projectId) => set({ selectedProject: projectId }),
+    
+    setPortfolioFilter: (filter) => set({ portfolioFilter: filter }),
+  }),
+  {
+    name: '3d-portfolio-storage',
+    storage: createJSONStorage(() => localStorage),
+    partialize: (state) => ({
+      theme: state.theme,
+      sceneSettings: state.sceneSettings,
+      portfolioFilter: state.portfolioFilter,
+    }),
+  }
+));

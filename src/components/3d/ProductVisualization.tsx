@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Text, Box, Sphere, Cylinder, Environment, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
@@ -21,25 +21,25 @@ interface ProductModelProps {
   onSelect: (id: string) => void;
 }
 
-const ProductModel: React.FC<ProductModelProps> = ({ product, isSelected, onSelect }) => {
+const ProductModel: React.FC<ProductModelProps> = React.memo(({ product, isSelected, onSelect }) => {
   const meshRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
-
-  useFrame((state) => {
-    if (meshRef.current) {
-      // 悬浮动画
-      meshRef.current.position.y = product.position[1] + Math.sin(state.clock.elapsedTime * 1.5) * 0.05;
-      
-      // 选中时的旋转动画
-      if (isSelected) {
-        meshRef.current.rotation.y += 0.01;
-      }
-    }
-  });
 
   const handleClick = useCallback(() => {
     onSelect(product.id);
   }, [product.id, onSelect]);
+
+  useFrame((state) => {
+    if (meshRef.current) {
+      // 悬浮动画（减慢频率）
+      meshRef.current.position.y = product.position[1] + Math.sin(state.clock.elapsedTime * 1.2) * 0.04;
+      
+      // 选中时的旋转动画（减慢速度）
+      if (isSelected) {
+        meshRef.current.rotation.y += 0.008;
+      }
+    }
+  });
 
   // 根据产品类型渲染不同的3D模型
   const renderProductModel = () => {
@@ -184,10 +184,10 @@ const ProductModel: React.FC<ProductModelProps> = ({ product, isSelected, onSele
       )}
     </group>
   );
-};
+});
 
 // 展示台组件
-const DisplayPlatform: React.FC = () => {
+const DisplayPlatform: React.FC = React.memo(() => {
   return (
     <>
       {/* 主展示台 */}
@@ -210,10 +210,10 @@ const DisplayPlatform: React.FC = () => {
       />
     </>
   );
-};
+});
 
 // 照明系统
-const ProductLighting: React.FC = () => {
+const ProductLighting: React.FC = React.memo(() => {
   return (
     <>
       {/* 环境光 */}
@@ -242,7 +242,7 @@ const ProductLighting: React.FC = () => {
       />
     </>
   );
-};
+});
 
 // 产品信息面板
 interface ProductInfoPanelProps {
@@ -250,7 +250,7 @@ interface ProductInfoPanelProps {
   onClose: () => void;
 }
 
-const ProductInfoPanel: React.FC<ProductInfoPanelProps> = ({ selectedProduct, onClose }) => {
+const ProductInfoPanel: React.FC<ProductInfoPanelProps> = React.memo(({ selectedProduct, onClose }) => {
   if (!selectedProduct) return null;
 
   return (
@@ -283,14 +283,14 @@ const ProductInfoPanel: React.FC<ProductInfoPanelProps> = ({ selectedProduct, on
       </div>
     </div>
   );
-};
+});
 
 // 主产品可视化组件
 const ProductVisualization: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
-  // 产品数据
-  const products: Product[] = [
+  // 产品数据缓存
+  const products = useMemo((): Product[] => [
     {
       id: '1',
       name: 'iPhone 15 Pro',
@@ -336,7 +336,7 @@ const ProductVisualization: React.FC = () => {
       color: '#1f2937',
       type: 'camera'
     }
-  ];
+  ], []);
 
   const handleProductSelect = useCallback((id: string) => {
     setSelectedProduct(selectedProduct === id ? null : id);
@@ -346,13 +346,29 @@ const ProductVisualization: React.FC = () => {
     setSelectedProduct(null);
   }, []);
 
-  const selectedItem = products.find(item => item.id === selectedProduct) || null;
+  const selectedItem = useMemo(() => 
+    products.find(item => item.id === selectedProduct) || null,
+    [products, selectedProduct]
+  );
+
+  const cameraConfig = useMemo(() => ({
+    position: [0, 3, 8] as [number, number, number],
+    fov: 50
+  }), []);
+
+  const glConfig = useMemo(() => ({
+    antialias: true,
+    preserveDrawingBuffer: true,
+    powerPreference: 'high-performance' as const
+  }), []);
 
   return (
     <div className="w-full h-screen relative bg-gradient-to-b from-gray-100 to-gray-300">
       <Canvas
-        camera={{ position: [0, 3, 8], fov: 50 }}
+        camera={cameraConfig}
         shadows
+        gl={glConfig}
+        performance={{ min: 0.5 }}
       >
         {/* 展示环境 */}
         <DisplayPlatform />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // 生产数据接口
@@ -189,8 +189,8 @@ interface KPICardProps {
   icon: React.ReactNode;
 }
 
-const KPICard: React.FC<KPICardProps> = ({ title, value, unit, trend, trendValue, color, icon }) => {
-  const getTrendIcon = () => {
+const KPICard: React.FC<KPICardProps> = React.memo(({ title, value, unit, trend, trendValue, color, icon }) => {
+  const getTrendIcon = useCallback(() => {
     switch (trend) {
       case 'up':
         return <span className="text-green-500">↗</span>;
@@ -199,7 +199,7 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, unit, trend, trendValue
       default:
         return <span className="text-gray-500">→</span>;
     }
-  };
+  }, [trend]);
 
   return (
     <motion.div
@@ -222,15 +222,15 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, unit, trend, trendValue
       <div className="text-sm opacity-80">{title}</div>
     </motion.div>
   );
-};
+});
 
 // 设备状态组件
 interface DeviceStatusCardProps {
   device: DeviceStatus;
 }
 
-const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({ device }) => {
-  const getStatusColor = (status: string) => {
+const DeviceStatusCard: React.FC<DeviceStatusCardProps> = React.memo(({ device }) => {
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'running': return 'bg-green-500';
       case 'idle': return 'bg-yellow-500';
@@ -238,9 +238,9 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({ device }) => {
       case 'error': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
-  };
+  }, []);
 
-  const getStatusText = (status: string) => {
+  const getStatusText = useCallback((status: string) => {
     switch (status) {
       case 'running': return '运行中';
       case 'idle': return '空闲';
@@ -248,7 +248,7 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({ device }) => {
       case 'error': return '故障';
       default: return '未知';
     }
-  };
+  }, []);
 
   return (
     <motion.div
@@ -282,7 +282,7 @@ const DeviceStatusCard: React.FC<DeviceStatusCardProps> = ({ device }) => {
       </div>
     </motion.div>
   );
-};
+});
 
 // 趋势图组件
 interface TrendChartProps {
@@ -291,14 +291,18 @@ interface TrendChartProps {
   color: string;
 }
 
-const TrendChart: React.FC<TrendChartProps> = ({ title, data, color }) => {
-  const maxValue = Math.max(...data.map(d => Math.max(d.production || d.qualityRate || 0, d.target || d.defectRate || 0)));
+const TrendChart: React.FC<TrendChartProps> = React.memo(({ title, data, color }) => {
+  const chartData = useMemo(() => data.slice(-12), [data]);
+  const maxValue = useMemo(() => 
+    Math.max(...data.map(d => Math.max(d.production || d.qualityRate || 0, d.target || d.defectRate || 0))), 
+    [data]
+  );
   
   return (
     <div className="bg-white rounded-lg p-6 shadow-md">
       <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
       <div className="h-40 flex items-end justify-between">
-        {data.slice(-12).map((item, index) => {
+        {chartData.map((item, index) => {
           const height1 = ((item.production || item.qualityRate) / maxValue) * 100;
           const height2 = ((item.target || item.defectRate) / maxValue) * 100;
           
@@ -329,31 +333,31 @@ const TrendChart: React.FC<TrendChartProps> = ({ title, data, color }) => {
       </div>
     </div>
   );
-};
+});
 
 // 警报列表组件
 interface AlertListProps {
   alerts: Alert[];
 }
 
-const AlertList: React.FC<AlertListProps> = ({ alerts }) => {
-  const getAlertIcon = (type: string) => {
+const AlertList: React.FC<AlertListProps> = React.memo(({ alerts }) => {
+  const getAlertIcon = useCallback((type: string) => {
     switch (type) {
       case 'error': return '🚨';
       case 'warning': return '⚠️';
       case 'info': return 'ℹ️';
       default: return '📢';
     }
-  };
+  }, []);
 
-  const getAlertColor = (type: string) => {
+  const getAlertColor = useCallback((type: string) => {
     switch (type) {
       case 'error': return 'border-red-500 bg-red-50';
       case 'warning': return 'border-yellow-500 bg-yellow-50';
       case 'info': return 'border-blue-500 bg-blue-50';
       default: return 'border-gray-500 bg-gray-50';
     }
-  };
+  }, []);
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-md">
@@ -391,31 +395,79 @@ const AlertList: React.FC<AlertListProps> = ({ alerts }) => {
       </div>
     </div>
   );
-};
+});
 
 // 主生产大屏组件
 const ProductionDashboard: React.FC = () => {
   const [data, setData] = useState<ProductionData>(generateMockData());
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // 缓存数据更新函数
+  const updateData = useCallback(() => {
+    setData(generateMockData());
+    setCurrentTime(new Date());
+  }, []);
+
+  const updateTime = useCallback(() => {
+    setCurrentTime(new Date());
+  }, []);
+
   // 模拟实时数据更新
   useEffect(() => {
-    const interval = setInterval(() => {
-      setData(generateMockData());
-      setCurrentTime(new Date());
-    }, 5000); // 每5秒更新一次
-
+    const interval = setInterval(updateData, 8000); // 减少更新频率到8秒
     return () => clearInterval(interval);
-  }, []);
+  }, [updateData]);
 
   // 时间更新
   useEffect(() => {
-    const timeInterval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
+    const timeInterval = setInterval(updateTime, 1000);
     return () => clearInterval(timeInterval);
-  }, []);
+  }, [updateTime]);
+
+  // 缓存KPI数据
+  const kpiData = useMemo(() => [
+    {
+      title: "今日产量",
+      value: data.todayProduction,
+      unit: "件",
+      trend: "up" as const,
+      trendValue: "+12%",
+      color: "from-blue-500 to-blue-600",
+      icon: "📊"
+    },
+    {
+      title: "生产效率",
+      value: data.efficiency,
+      unit: "%",
+      trend: "up" as const,
+      trendValue: "+2.3%",
+      color: "from-green-500 to-green-600",
+      icon: "⚡"
+    },
+    {
+      title: "质量合格率",
+      value: data.qualityRate,
+      unit: "%",
+      trend: "stable" as const,
+      trendValue: "0.1%",
+      color: "from-purple-500 to-purple-600",
+      icon: "✅"
+    },
+    {
+      title: "设备运行率",
+      value: `${data.activeDevices}/${data.totalDevices}`,
+      trend: "down" as const,
+      trendValue: "-1台",
+      color: "from-orange-500 to-orange-600",
+      icon: "🏭"
+    }
+  ], [data]);
+
+  // 缓存格式化时间
+  const formattedTime = useMemo(() => ({
+    time: currentTime.toLocaleTimeString(),
+    date: currentTime.toLocaleDateString()
+  }), [currentTime]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 p-6">
@@ -427,51 +479,28 @@ const ProductionDashboard: React.FC = () => {
         </div>
         <div className="text-right text-white">
           <div className="text-2xl font-mono">
-            {currentTime.toLocaleTimeString()}
+            {formattedTime.time}
           </div>
           <div className="text-blue-200">
-            {currentTime.toLocaleDateString()}
+            {formattedTime.date}
           </div>
         </div>
       </div>
 
       {/* KPI指标卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <KPICard
-          title="今日产量"
-          value={data.todayProduction}
-          unit="件"
-          trend="up"
-          trendValue="+12%"
-          color="from-blue-500 to-blue-600"
-          icon="📊"
-        />
-        <KPICard
-          title="生产效率"
-          value={data.efficiency}
-          unit="%"
-          trend="up"
-          trendValue="+2.3%"
-          color="from-green-500 to-green-600"
-          icon="⚡"
-        />
-        <KPICard
-          title="质量合格率"
-          value={data.qualityRate}
-          unit="%"
-          trend="stable"
-          trendValue="0.1%"
-          color="from-purple-500 to-purple-600"
-          icon="✅"
-        />
-        <KPICard
-          title="设备运行率"
-          value={`${data.activeDevices}/${data.totalDevices}`}
-          trend="down"
-          trendValue="-1台"
-          color="from-orange-500 to-orange-600"
-          icon="🏭"
-        />
+        {kpiData.map((kpi, index) => (
+          <KPICard
+            key={index}
+            title={kpi.title}
+            value={kpi.value}
+            unit={kpi.unit}
+            trend={kpi.trend}
+            trendValue={kpi.trendValue}
+            color={kpi.color}
+            icon={kpi.icon}
+          />
+        ))}
       </div>
 
       {/* 主要内容区域 */}
@@ -526,7 +555,7 @@ const ProductionDashboard: React.FC = () => {
             </div>
           </div>
           <div className="text-sm text-blue-200">
-            数据更新时间: {currentTime.toLocaleTimeString()}
+            数据更新时间: {formattedTime.time}
           </div>
         </div>
       </div>
