@@ -344,7 +344,7 @@ interface BuildingInfoPanelProps {
   onCloseRoom: () => void;
 }
 
-const BuildingInfoPanel: React.FC<BuildingInfoPanelProps> = React.memo(({ buildingInfo, selectedRoom, onCloseRoom }) => {
+const BuildingInfoPanel: React.FC<BuildingInfoPanelProps> = ({ buildingInfo, selectedRoom, onCloseRoom }) => {
   const buildingDetails = useMemo(() => [
     { label: '建筑类型', value: buildingInfo.type },
     { label: '建筑面积', value: buildingInfo.area },
@@ -406,7 +406,8 @@ const BuildingInfoPanel: React.FC<BuildingInfoPanelProps> = React.memo(({ buildi
               <h3 className="text-lg font-bold">{selectedRoom.name}</h3>
               <button
                 onClick={onCloseRoom}
-                className="text-gray-400 hover:text-white"
+                className="ml-2 px-2 py-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors duration-200 text-lg font-bold cursor-pointer"
+                title="关闭"
               >
                 ×
               </button>
@@ -439,7 +440,7 @@ const BuildingInfoPanel: React.FC<BuildingInfoPanelProps> = React.memo(({ buildi
       </AnimatePresence>
     </div>
   );
-});
+};
 
 // 性能监控组件 - 已禁用以避免在复杂场景中的误报
 const PerformanceMonitor: React.FC = React.memo(() => {
