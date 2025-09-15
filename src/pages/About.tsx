@@ -19,25 +19,21 @@ const About = () => {
     {
       year: '2024',
       title: '高级3D开发工程师',
-      company: '科技创新公司',
       description: '负责Web3D项目的架构设计和核心功能开发，专注于性能优化和用户体验提升。'
     },
     {
       year: '2023',
       title: '前端开发工程师',
-      company: '数字媒体公司',
       description: '开发交互式3D应用，参与多个大型项目的前端架构设计和实现。'
     },
     {
       year: '2022',
       title: '3D可视化开发者',
-      company: '创业团队',
       description: '从零开始构建3D可视化平台，积累了丰富的WebGL和Three.js开发经验。'
     },
     {
       year: '2021',
       title: '开始3D Web开发',
-      company: '自学阶段',
       description: '开始学习Three.js和WebGL技术，完成了第一个3D Web项目。'
     }
   ], []);
