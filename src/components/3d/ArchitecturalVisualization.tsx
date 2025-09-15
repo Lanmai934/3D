@@ -493,6 +493,16 @@ const ArchitecturalVisualization: React.FC = () => {
     setIsWireframe(!isWireframe);
   }, [isWireframe]);
 
+  const getCameraPosition = (): [number, number, number] => {
+    switch (viewMode) {
+      case 'exterior': return [10, 8, 10];
+      case 'interior': return [0, 8, 8];
+      case 'blueprint': return [0, 15, 0];
+      case 'landscape': return [15, 10, 15];
+      default: return [10, 8, 10];
+    }
+  };
+
   // 缓存相机配置
   const cameraConfig = useMemo(() => ({
     position: getCameraPosition(),
@@ -505,16 +515,6 @@ const ArchitecturalVisualization: React.FC = () => {
     preserveDrawingBuffer: true,
     powerPreference: "high-performance" as const
   }), [performanceOptimizer]);
-
-  const getCameraPosition = (): [number, number, number] => {
-    switch (viewMode) {
-      case 'exterior': return [10, 8, 10];
-      case 'interior': return [0, 8, 8];
-      case 'blueprint': return [0, 15, 0];
-      case 'landscape': return [15, 10, 15];
-      default: return [10, 8, 10];
-    }
-  };
 
   return (
     <div className="w-full h-screen relative bg-gradient-to-b from-sky-200 to-sky-50">
