@@ -65,7 +65,7 @@ const About = () => {
   ));
 
   // 记忆化时间线项组件
-  const TimelineItem = React.memo<{ item: { year: string; title: string; company: string; description: string }; index: number }>(({ item, index }) => (
+  const TimelineItem = React.memo<{ item: { year: string; title: string;  description: string }; index: number }>(({ item, index }) => (
     <motion.div
       className="relative flex items-start mb-12 last:mb-0"
       initial={{ opacity: 0, x: -50 }}
@@ -82,7 +82,6 @@ const About = () => {
           <h3 className="text-xl font-semibold text-white">{item.title}</h3>
           <span className="text-primary-400 font-medium">{item.year}</span>
         </div>
-        <p className="text-primary-300 mb-3">{item.company}</p>
         <p className="text-gray-300">{item.description}</p>
       </div>
     </motion.div>
