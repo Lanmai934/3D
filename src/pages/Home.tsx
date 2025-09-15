@@ -1,11 +1,7 @@
 import { Suspense, lazy, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  motion,
-  MOTION_VARIANTS,
-  MOTION_TRANSITIONS,
-  MOTION_GESTURES,
-  createDelayedAnimation
+  motion
 } from '../utils/motionShared';
 
 // 懒加载3D组件以提高初始加载性能

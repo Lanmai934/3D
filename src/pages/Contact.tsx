@@ -1,14 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import Scene3D from '../components/3d/Scene3D';
-import FloatingCube from '../components/3d/FloatingCube';
 import { cacheManager } from '../utils/cacheManager';
-import { performanceOptimizer } from '../utils/performanceOptimizer';
 import { 
-  motion,
-  MOTION_VARIANTS,
-  MOTION_TRANSITIONS,
-  MOTION_GESTURES,
-  createDelayedAnimation
+  motion
 } from '../utils/motionShared';
 
 interface FormData {
@@ -37,8 +30,7 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // 性能监控
-    const startTime = performance.now();
+    // 性能监控已移除以优化代码
     
     // 模拟表单提交
     try {
@@ -56,10 +48,6 @@ const Contact = () => {
     } finally {
       setIsSubmitting(false);
       setTimeout(() => setSubmitStatus('idle'), 3000);
-      
-      // 记录性能指标
-      const duration = performance.now() - startTime;
-      performanceOptimizer.recordMetric('formSubmission', duration);
     }
   }, [formData]);
 
@@ -101,11 +89,8 @@ const Contact = () => {
     <div className="pt-16 min-h-screen">
       {/* Hero Section */}
       <section className="relative h-96 flex items-center">
-        <div className="absolute inset-0">
-          <Scene3D enableControls={true} showEnvironment={false}>
-            <FloatingCube position={[-1, 0, 0]} color="#3b82f6" text="联" />
-            <FloatingCube position={[1, 0, 0]} color="#8b5cf6" text="系" />
-          </Scene3D>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-purple-900/20">
+          {/* 3D背景已移除以优化性能 */}
         </div>
         
         <div className="relative z-10 max-w-6xl mx-auto px-4 text-center">

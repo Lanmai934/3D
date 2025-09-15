@@ -8,8 +8,7 @@ import {
 } from '../utils/motionShared';
 
 // 懒加载3D组件以提高性能
-const Scene3D = lazy(() => import('../components/3d/Scene3D'));
-const FloatingCube = lazy(() => import('../components/3d/FloatingCube'));
+// 移除未使用的组件导入
 const InteractiveGallery3D = lazy(() => import('../components/3d/InteractiveGallery3D'));
 const ProductVisualization = lazy(() => import('../components/3d/ProductVisualization'));
 const ProductionDashboard = lazy(() => import('../components/3d/ProductionDashboard'));

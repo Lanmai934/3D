@@ -2,7 +2,8 @@ import React, { useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Box, Plane, Text, Environment, Sky } from '@react-three/drei';
 import { 
-  Group
+  Group,
+  PlaneGeometry
 } from '../../utils/threeShared';
 import { 
   motion, 
@@ -202,7 +203,7 @@ const BuildingStructure: React.FC<{ viewMode: ViewMode; onRoomClick: (room: Room
             <>
               {/* 外墙 */}
               <lineSegments>
-                <edgesGeometry args={[createOptimizedGeometry.plane(8, 6)]} />
+                <edgesGeometry args={[new PlaneGeometry(8, 6)]} />
                 <lineBasicMaterial color="#2c3e50" linewidth={2} />
               </lineSegments>
               
@@ -314,7 +315,7 @@ const ViewModeSelector: React.FC<ViewModeSelectorProps> = React.memo(({ currentM
           {modes.map((mode) => (
             <motion.button
               key={mode.id}
-              onClick={() => onModeChange(mode.id)}
+              onClick={() => onModeChange(mode.id as ViewMode)}
               className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 ${
                 currentMode === mode.id
                   ? 'bg-blue-600 text-white'
@@ -460,7 +461,7 @@ const ArchitecturalVisualization: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('exterior');
   const [selectedRoom, setSelectedRoom] = useState<RoomInfo | null>(null);
   const [isWireframe, setIsWireframe] = useState(false);
-  const { isOptimized, performanceLevel } = usePerformanceOptimization();
+  const performanceOptimizer = usePerformanceOptimization();
 
   // 建筑信息数据 - 使用useMemo缓存
   const buildingInfo: BuildingInfo = useMemo(() => ({
@@ -500,10 +501,10 @@ const ArchitecturalVisualization: React.FC = () => {
 
   // 缓存WebGL配置
   const glConfig = useMemo(() => ({
-    antialias: performanceLevel > 0.5,
+    antialias: performanceOptimizer.getMetrics().fps > 30,
     preserveDrawingBuffer: true,
     powerPreference: "high-performance" as const
-  }), [performanceLevel]);
+  }), [performanceOptimizer]);
 
   const getCameraPosition = (): [number, number, number] => {
     switch (viewMode) {
@@ -538,8 +539,8 @@ const ArchitecturalVisualization: React.FC = () => {
           position={[10, 10, 5]}
           intensity={1}
           castShadow
-          shadow-mapSize-width={isOptimized ? 2048 : 1024}
-          shadow-mapSize-height={isOptimized ? 2048 : 1024}
+          shadow-mapSize-width={performanceOptimizer.getMetrics().fps > 30 ? 2048 : 1024}
+          shadow-mapSize-height={performanceOptimizer.getMetrics().fps > 30 ? 2048 : 1024}
         />
         <pointLight position={[-10, 10, -5]} intensity={0.5} color="#ffd700" />
         

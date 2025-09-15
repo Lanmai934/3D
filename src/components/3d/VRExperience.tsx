@@ -1,25 +1,15 @@
 import React, { useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Text, Environment, Stars, Float } from '@react-three/drei';
-import { 
-  Mesh, 
-  Points, 
+import {
+  Mesh,
   DoubleSide,
-  BufferGeometry,
-  BufferAttribute,
-  PointsMaterial,
-  MeshStandardMaterial,
-  MeshBasicMaterial,
-  SphereGeometry,
-  RingGeometry
-} from '../../../utils/threeShared';
+  Points
+} from '../../utils/threeShared';
 import { 
   motion, 
-  AnimatePresence,
-  MOTION_VARIANTS,
-  MOTION_TRANSITIONS,
-  MOTION_GESTURES
-} from '../../../utils/motionShared';
+  AnimatePresence
+} from '../../utils/motionShared';
 
 // VR场景类型
 type VRScene = 'space' | 'underwater' | 'forest' | 'city' | 'museum';

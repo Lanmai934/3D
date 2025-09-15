@@ -6,8 +6,7 @@ import LazyWrapper from './components/ui/LazyWrapper';
 import SettingsPanel from './components/ui/SettingsPanel';
 import { useAppStore } from './store/useAppStore';
 import { cacheManager } from './utils/cacheManager';
-import { resourcePreloader } from './utils/resourcePreloader';
-import { performanceOptimizer } from './utils/performanceOptimizer';
+// 移除未使用的导入
 
 // 懒加载页面组件
 const Home = lazy(() => import('./pages/Home'));

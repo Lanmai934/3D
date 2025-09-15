@@ -18,7 +18,8 @@ const ParticleField = ({ count = 1000, radius = 10 }: ParticleFieldProps) => {
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     
     if (gl) {
-      const renderer = gl.getParameter(gl.RENDERER);
+      const webglContext = gl as WebGLRenderingContext;
+      const renderer = webglContext.getParameter(webglContext.RENDERER);
       const isMobile = /Mobile|Android|iPhone|iPad/.test(navigator.userAgent);
       const isLowEnd = renderer && renderer.includes('Intel');
       

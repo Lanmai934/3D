@@ -1,11 +1,8 @@
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useMemo, useCallback } from 'react';
-import Scene3D from '../components/3d/Scene3D';
-import FloatingCube from '../components/3d/FloatingCube';
-import { usePerformanceOptimization } from '../utils/performanceOptimizer';
 
 const About = () => {
-  const { getMetrics } = usePerformanceOptimization();
+  // 性能优化器已移除以简化代码
   
   // 缓存技能数据
   const skills = useMemo(() => [
@@ -49,12 +46,8 @@ const About = () => {
     <div className="pt-16 min-h-screen">
       {/* Hero Section */}
       <section className="relative h-screen flex items-center">
-        <div className="absolute inset-0">
-          <Scene3D enableControls={true} showEnvironment={true}>
-            <FloatingCube position={[0, 0, 0]} color="#3b82f6" text="我" />
-            <FloatingCube position={[-2, 1, -1]} color="#8b5cf6" text="创" />
-            <FloatingCube position={[2, -1, 1]} color="#06b6d4" text="造" />
-          </Scene3D>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 to-secondary-900/20">
+          {/* 3D背景已移除以优化性能 */}
         </div>
         
         <div className="relative z-10 max-w-6xl mx-auto px-4">
@@ -167,10 +160,9 @@ const About = () => {
       </section>
     </div>
   );
-};
 
 // 记忆化技能卡片组件
-const SkillCard = React.memo<{ skill: typeof skills[0]; index: number }>(({ skill, index }) => (
+const SkillCard = React.memo<{ skill: { name: string; level: number; color: string }; index: number }>(({ skill, index }) => (
   <motion.div
     className="glass p-6 rounded-xl"
     initial={{ opacity: 0, y: 30 }}
@@ -196,7 +188,7 @@ const SkillCard = React.memo<{ skill: typeof skills[0]; index: number }>(({ skil
 ));
 
 // 记忆化时间线项组件
-const TimelineItem = React.memo<{ item: typeof timeline[0]; index: number }>(({ item, index }) => (
+const TimelineItem = React.memo<{ item: { year: string; title: string; company: string; description: string }; index: number }>(({ item, index }) => (
   <motion.div
     className="relative flex items-start mb-12 last:mb-0"
     initial={{ opacity: 0, x: -50 }}
@@ -218,5 +210,7 @@ const TimelineItem = React.memo<{ item: typeof timeline[0]; index: number }>(({ 
     </div>
   </motion.div>
 ));
+
+};
 
 export default About;
