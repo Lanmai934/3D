@@ -1,35 +1,57 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+/**
+ * 性能统计数据接口
+ */
 interface PerformanceStats {
+  /** 每秒帧数 */
   fps: number;
+  /** 单帧渲染时间（毫秒） */
   frameTime: number;
+  /** 内存使用量（MB），可选 */
   memoryUsage?: number;
+  /** 绘制调用次数，可选 */
   drawCalls?: number;
 }
 
+/**
+ * 性能监控组件属性接口
+ */
 interface PerformanceMonitorProps {
+  /** 是否默认显示统计信息 */
   showStats?: boolean;
+  /** 性能数据变化时的回调函数 */
   onPerformanceChange?: (stats: PerformanceStats) => void;
 }
 
+/**
+ * 性能监控组件
+ * 实时跟踪和展示应用的性能指标，包括FPS、帧时间、内存使用等
+ * 支持键盘快捷键切换显示，并在性能较差时显示警告
+ * 
+ * @param showStats 是否默认显示统计信息
+ * @param onPerformanceChange 性能数据变化时的回调函数
+ */
 const PerformanceMonitor = ({ 
   showStats = false, 
   onPerformanceChange 
 }: PerformanceMonitorProps) => {
+  // 性能统计数据状态
   const [stats, setStats] = useState<PerformanceStats>({
     fps: 0,
     frameTime: 0,
     memoryUsage: 0,
     drawCalls: 0
   });
+  // 控制监控面板的显示状态
   const [isVisible, setIsVisible] = useState(showStats);
 
-  // FPS计算
+  // FPS和性能数据计算
   useEffect(() => {
-    let frameCount = 0;
-    let lastTime = performance.now();
-    let lastFpsUpdate = performance.now();
+    let frameCount = 0; // 帧计数器
+    let lastTime = performance.now(); // 上一帧时间
+    let lastFpsUpdate = performance.now(); // 上次FPS更新时间
     let animationId: number;
 
     const updateStats = () => {
@@ -37,36 +59,39 @@ const PerformanceMonitor = ({
       const currentTime = performance.now();
       const deltaTime = currentTime - lastTime;
       
-      // 每秒更新一次FPS
+      // 每秒更新一次FPS统计
       if (currentTime - lastFpsUpdate >= 1000) {
+        // 计算FPS：帧数 / 时间间隔
         const fps = Math.round((frameCount * 1000) / (currentTime - lastFpsUpdate));
         const frameTime = deltaTime;
         
-        // 获取内存使用情况（如果支持）
+        // 获取内存使用情况（仅在支持的浏览器中）
         const memoryUsage = (performance as any).memory 
-          ? Math.round((performance as any).memory.usedJSHeapSize / 1048576) 
+          ? Math.round((performance as any).memory.usedJSHeapSize / 1048576) // 转换为MB
           : undefined;
         
         const newStats = {
           fps,
-          frameTime: Math.round(frameTime * 100) / 100,
+          frameTime: Math.round(frameTime * 100) / 100, // 保留两位小数
           memoryUsage,
-          drawCalls: 0
+          drawCalls: 0 // TODO: 实现绘制调用统计
         };
         
         setStats(newStats);
-        onPerformanceChange?.(newStats);
+        onPerformanceChange?.(newStats); // 通知外部组件性能变化
         
+        // 重置计数器
         frameCount = 0;
         lastFpsUpdate = currentTime;
       }
       
       lastTime = currentTime;
-      animationId = requestAnimationFrame(updateStats);
+      animationId = requestAnimationFrame(updateStats); // 下一帧继续监控
     };
 
     animationId = requestAnimationFrame(updateStats);
 
+    // 清理函数：取消动画帧请求
     return () => {
       if (animationId) {
         cancelAnimationFrame(animationId);
@@ -74,12 +99,13 @@ const PerformanceMonitor = ({
     };
   }, [onPerformanceChange]);
 
-  // 键盘快捷键切换显示
+  // 键盘快捷键监听：F3或Ctrl+I切换显示
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // F3键或Ctrl+I组合键切换监控面板显示
       if (e.key === 'F3' || (e.ctrlKey && e.key === 'i')) {
-        e.preventDefault();
-        setIsVisible(prev => !prev);
+        e.preventDefault(); // 阻止默认行为
+        setIsVisible(prev => !prev); // 切换显示状态
       }
     };
 
@@ -87,11 +113,11 @@ const PerformanceMonitor = ({
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // 性能警告
+  // 根据FPS判断性能状态
   const getPerformanceStatus = () => {
-    if (stats.fps >= 50) return { status: 'good', color: 'text-green-400' };
-    if (stats.fps >= 30) return { status: 'warning', color: 'text-yellow-400' };
-    return { status: 'poor', color: 'text-red-400' };
+    if (stats.fps >= 50) return { status: 'good', color: 'text-green-400' }; // 良好：>=50 FPS
+    if (stats.fps >= 30) return { status: 'warning', color: 'text-yellow-400' }; // 一般：30-49 FPS
+    return { status: 'poor', color: 'text-red-400' }; // 较差：<30 FPS
   };
 
   const performanceStatus = getPerformanceStatus();

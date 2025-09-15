@@ -11,49 +11,68 @@ import {
   AnimatePresence
 } from '../../utils/motionShared';
 
-// VR场景类型
+/**
+ * VR场景类型定义
+ * 支持五种不同的虚拟现实环境
+ */
 type VRScene = 'space' | 'underwater' | 'forest' | 'city' | 'museum';
 
-
-
-// 交互热点接口
+/**
+ * 交互热点接口
+ * 定义3D场景中可交互的热点标记
+ */
 interface Hotspot {
+  /** 热点唯一标识符 */
   id: string;
+  /** 热点在3D空间中的位置坐标 [x, y, z] */
   position: [number, number, number];
+  /** 热点显示标题 */
   title: string;
+  /** 热点详细描述 */
   description: string;
+  /** 热点类型：信息点、传送点或交互点 */
   type: 'info' | 'teleport' | 'interaction';
 }
 
-// 浮动粒子组件
+/**
+ * 浮动粒子组件
+ * 根据不同VR场景渲染相应颜色和效果的粒子系统
+ * 使用React.memo优化性能，避免不必要的重渲染
+ * 
+ * @param scene 当前VR场景类型
+ */
 const FloatingParticles: React.FC<{ scene: VRScene }> = React.memo(({ scene }) => {
   const particlesRef = useRef<Points>(null);
-  const particleCount = 150; // 减少粒子数量
+  const particleCount = 150; // 粒子数量，平衡视觉效果和性能
   
+  // 根据场景类型确定粒子颜色
   const particleColor = useMemo(() => {
     switch (scene) {
-      case 'space': return '#ffffff';
-      case 'underwater': return '#00bfff';
-      case 'forest': return '#90ee90';
-      case 'city': return '#ffd700';
-      case 'museum': return '#dda0dd';
+      case 'space': return '#ffffff'; // 太空：白色星点
+      case 'underwater': return '#00bfff'; // 深海：蓝色气泡
+      case 'forest': return '#90ee90'; // 森林：绿色光点
+      case 'city': return '#ffd700'; // 城市：金色光芒
+      case 'museum': return '#dda0dd'; // 博物馆：紫色光尘
       default: return '#ffffff';
     }
   }, [scene]);
 
+  // 粒子动画：缓慢旋转营造动态效果
   useFrame(() => {
     if (particlesRef.current) {
-      particlesRef.current.rotation.y += 0.0008; // 减慢动画
-      particlesRef.current.rotation.x += 0.0004;
+      particlesRef.current.rotation.y += 0.0008; // Y轴旋转速度
+      particlesRef.current.rotation.x += 0.0004; // X轴旋转速度
     }
   });
 
+  // 生成随机分布的粒子位置
   const positions = useMemo(() => {
     const pos = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 50;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 50;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 50;
+      // 在50x50x50的立方体空间内随机分布
+      pos[i * 3] = (Math.random() - 0.5) * 50;     // X坐标
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 50; // Y坐标
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 50; // Z坐标
     }
     return pos;
   }, [particleCount]);
@@ -78,31 +97,49 @@ const FloatingParticles: React.FC<{ scene: VRScene }> = React.memo(({ scene }) =
   );
 });
 
-// 3D热点组件
+/**
+ * 3D热点标记组件属性接口
+ */
 interface HotspotMarkerProps {
+  /** 热点数据 */
   hotspot: Hotspot;
+  /** 热点选择回调函数 */
   onSelect: (hotspot: Hotspot) => void;
+  /** 是否为当前选中状态 */
   isSelected: boolean;
 }
 
+/**
+ * 3D热点标记组件
+ * 在3D场景中渲染可交互的热点标记，支持悬停和点击效果
+ * 包含球体几何体、光环效果和文本标签
+ * 
+ * @param hotspot 热点数据
+ * @param onSelect 点击选择回调
+ * @param isSelected 是否选中状态
+ */
 const HotspotMarker: React.FC<HotspotMarkerProps> = React.memo(({ hotspot, onSelect, isSelected }) => {
   const meshRef = useRef<Mesh>(null);
-  const [hovered, setHovered] = useState(false);
+  const [hovered, setHovered] = useState(false); // 鼠标悬停状态
 
+  // 根据热点类型确定颜色
   const hotspotColor = useMemo(() => {
     switch (hotspot.type) {
-      case 'info': return '#4a90e2';
-      case 'teleport': return '#50c878';
-      case 'interaction': return '#ff6b6b';
+      case 'info': return '#4a90e2';      // 信息点：蓝色
+      case 'teleport': return '#50c878';  // 传送点：绿色
+      case 'interaction': return '#ff6b6b'; // 交互点：红色
       default: return '#ffffff';
     }
   }, [hotspot.type]);
 
+  // 热点动画效果：上下浮动和旋转
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.position.y = hotspot.position[1] + Math.sin(state.clock.elapsedTime * 1.5) * 0.08; // 减慢动画
+      // 上下浮动动画
+      meshRef.current.position.y = hotspot.position[1] + Math.sin(state.clock.elapsedTime * 1.5) * 0.08;
+      // 选中或悬停时的旋转动画
       if (isSelected || hovered) {
-        meshRef.current.rotation.y += 0.015; // 减慢旋转
+        meshRef.current.rotation.y += 0.015;
       }
     }
   });
@@ -154,30 +191,42 @@ const HotspotMarker: React.FC<HotspotMarkerProps> = React.memo(({ hotspot, onSel
   );
 });
 
-// VR环境组件
+/**
+ * VR环境组件属性接口
+ */
 interface VREnvironmentProps {
+  /** 当前VR场景类型 */
   scene: VRScene;
 }
 
+/**
+ * VR环境组件
+ * 根据场景类型设置相应的环境光照、背景色和特效
+ * 包含环境贴图、背景颜色、星空效果和粒子系统
+ * 
+ * @param scene 当前VR场景类型
+ */
 const VREnvironment: React.FC<VREnvironmentProps> = React.memo(({ scene }) => {
+  // 根据场景选择环境光照预设
   const environmentPreset = useMemo(() => {
     switch (scene) {
-      case 'space': return 'night';
-      case 'underwater': return 'dawn';
-      case 'forest': return 'forest';
-      case 'city': return 'sunset';
-      case 'museum': return 'studio';
+      case 'space': return 'night';     // 太空：夜晚光照
+      case 'underwater': return 'dawn'; // 深海：黎明光照
+      case 'forest': return 'forest';   // 森林：森林光照
+      case 'city': return 'sunset';     // 城市：日落光照
+      case 'museum': return 'studio';   // 博物馆：工作室光照
       default: return 'sunset';
     }
   }, [scene]);
 
+  // 根据场景设置背景颜色
   const backgroundColor = useMemo(() => {
     switch (scene) {
-      case 'space': return '#000011';
-      case 'underwater': return '#006994';
-      case 'forest': return '#2d5016';
-      case 'city': return '#1a1a2e';
-      case 'museum': return '#f5f5f5';
+      case 'space': return '#000011';     // 太空：深蓝黑色
+      case 'underwater': return '#006994'; // 深海：深蓝色
+      case 'forest': return '#2d5016';    // 森林：深绿色
+      case 'city': return '#1a1a2e';      // 城市：深紫色
+      case 'museum': return '#f5f5f5';    // 博物馆：浅灰色
       default: return '#87ceeb';
     }
   }, [scene]);
@@ -192,13 +241,26 @@ const VREnvironment: React.FC<VREnvironmentProps> = React.memo(({ scene }) => {
   );
 });
 
-// VR场景选择器
+/**
+ * VR场景选择器组件属性接口
+ */
 interface VRSceneSelectorProps {
+  /** 当前选中的场景 */
   currentScene: VRScene;
+  /** 场景切换回调函数 */
   onSceneChange: (scene: VRScene) => void;
 }
 
+/**
+ * VR场景选择器组件
+ * 提供用户界面来切换不同的VR场景环境
+ * 包含场景图标、名称和切换动画效果
+ * 
+ * @param currentScene 当前选中的场景
+ * @param onSceneChange 场景切换回调
+ */
 const VRSceneSelector: React.FC<VRSceneSelectorProps> = React.memo(({ currentScene, onSceneChange }) => {
+  // 场景配置数据
   const scenes = useMemo(() => [
     { id: 'space' as VRScene, name: '太空探索', icon: '🚀' },
     { id: 'underwater' as VRScene, name: '深海世界', icon: '🌊' },
@@ -234,14 +296,30 @@ const VRSceneSelector: React.FC<VRSceneSelectorProps> = React.memo(({ currentSce
   );
 });
 
-// VR控制面板
+/**
+ * VR控制面板组件属性接口
+ */
 interface VRControlPanelProps {
+  /** 是否处于VR模式 */
   isVRMode: boolean;
+  /** VR模式切换回调 */
   onToggleVR: () => void;
+  /** 当前选中的热点 */
   selectedHotspot: Hotspot | null;
+  /** 关闭热点信息回调 */
   onCloseHotspot: () => void;
 }
 
+/**
+ * VR控制面板组件
+ * 提供VR模式切换按钮和热点信息显示面板
+ * 包含动画效果和响应式布局
+ * 
+ * @param isVRMode 是否VR模式
+ * @param onToggleVR VR切换回调
+ * @param selectedHotspot 选中热点
+ * @param onCloseHotspot 关闭热点回调
+ */
 const VRControlPanel: React.FC<VRControlPanelProps> = React.memo(({
   isVRMode,
   onToggleVR,
@@ -300,13 +378,19 @@ const VRControlPanel: React.FC<VRControlPanelProps> = React.memo(({
   );
 });
 
-// 主VR体验组件
+/**
+ * 主VR体验组件
+ * 整合所有VR功能模块，提供完整的虚拟现实体验
+ * 包含场景管理、热点交互、VR模式切换等核心功能
+ * 使用React Three Fiber渲染3D场景
+ */
 const VRExperience: React.FC = () => {
-  const [currentScene, setCurrentScene] = useState<VRScene>('space');
-  const [isVRMode, setIsVRMode] = useState(false);
-  const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null);
+  // 组件状态管理
+  const [currentScene, setCurrentScene] = useState<VRScene>('space'); // 当前场景
+  const [isVRMode, setIsVRMode] = useState(false); // VR模式状态
+  const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null); // 选中的热点
 
-  // 场景热点数据
+  // 获取指定场景的热点数据
   const getSceneHotspots = (scene: VRScene): Hotspot[] => {
     const hotspotData: Record<VRScene, Hotspot[]> = {
       space: [
@@ -400,9 +484,10 @@ const VRExperience: React.FC = () => {
     return hotspotData[scene] || [];
   };
 
+  // 事件处理函数
   const handleSceneChange = useCallback((scene: VRScene) => {
     setCurrentScene(scene);
-    setSelectedHotspot(null);
+    setSelectedHotspot(null); // 切换场景时清除选中热点
   }, []);
 
   const handleHotspotSelect = useCallback((hotspot: Hotspot) => {
@@ -417,17 +502,20 @@ const VRExperience: React.FC = () => {
     setIsVRMode(!isVRMode);
   }, [isVRMode]);
 
+  // 计算属性
   const currentHotspots = useMemo(() => getSceneHotspots(currentScene), [currentScene]);
 
+  // 相机配置：VR模式使用更大的视野角
   const cameraConfig = useMemo(() => ({
     position: [0, 0, 5] as [number, number, number],
-    fov: isVRMode ? 110 : 75
+    fov: isVRMode ? 110 : 75 // VR模式视野角更大
   }), [isVRMode]);
 
+  // WebGL渲染器配置：优化性能设置
   const glConfig = useMemo(() => ({
-    antialias: true,
-    powerPreference: 'high-performance' as const,
-    alpha: false
+    antialias: true, // 抗锯齿
+    powerPreference: 'high-performance' as const, // 高性能模式
+    alpha: false // 禁用透明度以提升性能
   }), []);
 
   return (

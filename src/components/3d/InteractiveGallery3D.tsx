@@ -9,6 +9,10 @@ interface ExhibitItem {
   id: string;
   title: string;
   description: string;
+  // 展品在3D空间中的位置坐标 [x, y, z]
+  // x: 左右位置（负值向左，正值向右）
+  // y: 上下位置（负值向下，正值向上）
+  // z: 前后位置（负值向后，正值向前）
   position: [number, number, number];
   color: string;
   type: 'artwork' | 'sculpture' | 'digital';
