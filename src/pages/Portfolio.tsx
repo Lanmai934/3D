@@ -16,6 +16,7 @@ const ProductVisualization = lazy(() => import('../components/3d/ProductVisualiz
 const ProductionDashboard = lazy(() => import('../components/3d/ProductionDashboard'));
 const VRExperience = lazy(() => import('../components/3d/VRExperience'));
 const ArchitecturalVisualization = lazy(() => import('../components/3d/ArchitecturalVisualization'));
+const InteractiveFlowerCanvas = lazy(() => import('../components/3d/InteractiveFlowerCanvas'));
 
 // 项目数据类型定义
 interface Project {
@@ -45,6 +46,7 @@ const Portfolio = () => {
   const [showProductionDashboard, setShowProductionDashboard] = useState(false);   // 数据可视化大屏
   const [showVRExperience, setShowVRExperience] = useState(false);                 // 虚拟现实体验
   const [showArchitecturalVisualization, setShowArchitecturalVisualization] = useState(false); // 建筑可视化
+  const [showFlowerCanvas, setShowFlowerCanvas] = useState(false);                 // 交互式花朵生成器
 
   // 使用useMemo缓存项目数据，避免每次渲染时重新创建数组
   // 这是性能优化的重要手段，特别是当数据量较大时
@@ -93,6 +95,15 @@ const Portfolio = () => {
       color: '#ef4444',
       position: [1, 1, 1],
       technologies: ['Three.js', 'Blender', 'PBR', 'HDR']
+    },
+    {
+      id: 6,
+      title: '交互式花朵生成器',
+      description: '基于WebGL着色器的程序化花朵生成系统，支持实时交互和动画效果',
+      category: 'interactive',
+      color: '#ec4899',
+      position: [0, 0, 2],
+      technologies: ['React Three Fiber', 'GLSL', 'WebGL', 'Shader']
     }
   ], []);
 
@@ -103,7 +114,8 @@ const Portfolio = () => {
     { id: 'visualization', name: '可视化' },
     { id: 'dataviz', name: '数据可视化' },
     { id: 'vr', name: 'VR/AR' },
-    { id: 'architecture', name: '建筑可视化' }
+    { id: 'architecture', name: '建筑可视化' },
+    { id: 'interactive', name: '交互体验' }
   ], []);
 
   // 根据选中的分类过滤项目列表
@@ -128,6 +140,8 @@ const Portfolio = () => {
       setShowVRExperience(true);
     } else if (project.title === '建筑可视化') {
       setShowArchitecturalVisualization(true);
+    } else if (project.title === '交互式花朵生成器') {
+      setShowFlowerCanvas(true);
     } else {
       setSelectedProject(project);
     }
@@ -467,6 +481,35 @@ const Portfolio = () => {
            </Suspense>
          </motion.div>
        )}
+
+       {/* 交互式花朵生成器模态框 */}
+       {showFlowerCanvas && (
+         <motion.div
+           className="fixed inset-0 bg-black z-50"  // 全屏黑色背景
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           exit={{ opacity: 0 }}
+         >
+           {/* 关闭按钮 */}
+           <button
+             onClick={() => setShowFlowerCanvas(false)}
+             className="absolute top-4 right-4 z-10 text-white hover:text-gray-300 transition-colors"
+           >
+             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+             </svg>
+           </button>
+           {/* 懒加载花朵生成器组件 */}
+           <Suspense fallback={
+             <div className="flex items-center justify-center h-full">
+               <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-pink-500"></div>
+             </div>
+           }>
+             <InteractiveFlowerCanvas />
+           </Suspense>
+         </motion.div>
+       )}
+       
     </div>
   );
 };
